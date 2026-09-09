@@ -92,23 +92,45 @@ function freshQuestionForClient(idx){
   return { n: q.n, cat: q.cat, prompt: q.prompt, dir: q.dir, opts: q.opts };
 }
 
+// The host ends the game deliberately — it never stops on its own except when
+// the question bank runs out.
+function endGame(){
+  if (!game) return;
+  clearTimeout(game.roundTimer);
+  game.roundActive = false;
+  game.phase = 'final';
+  const payload = {
+    honour: game.honour,
+    stillStanding: game.players.filter(p => p.active).map(p => ({ team: p.team, name: p.name }))
+  };
+  game.lastFinalPayload = payload;
+  io.emit('game:final', payload);
+}
+
 function nextQuestion(){
   if (!game) return;
   clearTimeout(game.roundTimer);
   game.qIndex++;
-  const remaining = game.players.filter(p => p.active).length;
-  if (game.qIndex >= QUESTIONS.length || remaining <= 1){
-    game.phase = 'final';
-    const payload = { honour: game.honour, stillStanding: game.players.filter(p => p.active).map(p => ({team:p.team, name:p.name})) };
-    game.lastFinalPayload = payload;
-    io.emit('game:final', payload);
-    return;
+  if (game.qIndex >= QUESTIONS.length || game.players.length === 0){ endGame(); return; }
+
+  // Round winners step aside so others get a turn. With a small group that pool
+  // empties fast, so once fewer than two people are still in contention everyone
+  // comes back in and the game keeps going — it never dead-ends mid-event.
+  let everyoneBack = false;
+  if (game.players.filter(p => p.active).length < 2 && game.players.some(p => !p.active)){
+    game.players.forEach(p => { p.active = true; });
+    everyoneBack = true;
   }
+
+  const remaining = game.players.filter(p => p.active).length;
   game.answers = {};
   game.questionStart = Date.now();
   game.roundActive = true;
   game.phase = 'question';
-  const payload = { q: freshQuestionForClient(game.qIndex), qNum: game.qIndex + 1, total: QUESTIONS.length, activeCount: remaining, startedAt: game.questionStart, roundMs: ROUND_MS };
+  const payload = {
+    q: freshQuestionForClient(game.qIndex), qNum: game.qIndex + 1, total: QUESTIONS.length,
+    activeCount: remaining, startedAt: game.questionStart, roundMs: ROUND_MS, everyoneBack: everyoneBack
+  };
   game.lastQuestionPayload = payload;
   io.emit('question:show', payload);
   game.roundTimer = setTimeout(() => endRound(), ROUND_MS + 400);
@@ -156,7 +178,7 @@ function endRound(){
   const payload = {
     results, winner, qNum: q.n, total: QUESTIONS.length,
     correctSeq: q.ans, explain: q.explain,
-    isLastRound: (game.qIndex + 1 >= QUESTIONS.length) || (game.players.filter(p => p.active).length <= 1)
+    isLastRound: (game.qIndex + 1 >= QUESTIONS.length)
   };
   game.lastResultsPayload = payload;
   io.emit('round:results', payload);
@@ -180,7 +202,9 @@ io.on('connection', (socket) => {
   socket.on('host:removePlayer', (playerId) => {
     if (!game) return;
     game.players = game.players.filter(p => p.id !== playerId);
-    broadcastLobby();
+    delete game.answers[playerId];
+    if (game.phase === 'lobby') broadcastLobby();
+    else maybeAutoEnd();
   });
 
   socket.on('player:join', ({ team, name, pin, token } = {}, ack) => {
@@ -224,6 +248,17 @@ io.on('connection', (socket) => {
 
   socket.on('host:nextQuestion', () => { nextQuestion(); });
   socket.on('host:endRoundNow', () => { endRound(); });
+  socket.on('host:endGame', () => { endGame(); });
+
+  socket.on('player:leave', ({ token } = {}) => {
+    if (!game) return;
+    const pid = token || socket.data.token;
+    if (!pid) return;
+    game.players = game.players.filter(p => p.id !== pid);
+    delete game.answers[pid];
+    if (game.phase === 'lobby') broadcastLobby();
+    else maybeAutoEnd();   // they may have been the last one the round was waiting on
+  });
 
   socket.on('player:submit', ({ token, order } = {}) => {
     if (!game || !game.roundActive) return;
