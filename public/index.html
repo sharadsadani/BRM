@@ -45,7 +45,20 @@
     .lights span:nth-child(3n){ animation-delay:2s; }
   }
   @keyframes twinkle{ 0%,100%{opacity:.5;} 50%{opacity:1;} }
-  .eyebrow{ text-align:center; color:var(--text-2); font-size:.72rem; font-weight:700; letter-spacing:.14em; text-transform:uppercase; margin:14px 0 0; }
+  .eyebrow{
+    text-align:center; color:var(--gold);
+    font-family:'Baloo 2','Manrope',system-ui,sans-serif;
+    font-size:clamp(1.15rem,2.9vw,2.3rem); font-weight:800; letter-spacing:.04em;
+    text-transform:uppercase; margin:8px auto 0; max-width:1240px; padding:0 14px;
+    line-height:1.14; text-wrap:balance; text-shadow:0 2px 16px rgba(0,0,0,.55);
+  }
+  .tagline{
+    text-align:center; color:var(--teal);
+    font-family:'Baloo 2','Manrope',system-ui,sans-serif;
+    font-size:clamp(1.35rem,3.7vw,3rem); font-weight:800; letter-spacing:.01em;
+    margin:2px auto 0; max-width:1240px; padding:0 14px;
+    line-height:1.1; text-wrap:balance; text-shadow:0 3px 20px rgba(52,211,153,.3);
+  }
 
   #app{ max-width:1180px; margin:0 auto; padding:8px 20px 56px; }
   .screen{ display:none; }
@@ -70,9 +83,9 @@
 
   .panel{ background:var(--panel); border:1px solid var(--border-soft); border-radius:28px; backdrop-filter:blur(6px); }
 
-  .home-hero{ text-align:center; padding:38px 12px 8px; }
+  .home-hero{ text-align:center; padding:30px 12px 8px; }
   .home-title{
-    font-size:clamp(2.6rem, 7vw, 5.2rem); font-weight:800; line-height:1.02;
+    font-size:clamp(2.2rem, 5.6vw, 4.2rem); font-weight:800; line-height:1.02;
     background:linear-gradient(120deg, var(--saffron) 10%, var(--magenta) 55%, var(--gold) 95%);
     -webkit-background-clip:text; background-clip:text; color:transparent;
     filter:drop-shadow(0 6px 30px rgba(236,72,153,0.25));
@@ -254,13 +267,13 @@
   <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
 </div>
 <p class="eyebrow">Shree Balaji Rajasthani Mandal &middot; Ganesh Utsav 2026</p>
+<p class="tagline">Guess or Mess &mdash; Fastest Finger First</p>
 
 <div id="app">
 
   <!-- ROLE CHOICE -->
   <section class="screen active" id="screen-role">
     <div class="home-hero">
-      <h1 class="home-title">Fastest Finger First</h1>
       <p class="home-sub">A live buzzer round &mdash; arrange each answer in the right order before anyone else does. Fastest correct sequence wins the round.</p>
       <div class="role-row">
         <div class="role-card" id="pick-host">
