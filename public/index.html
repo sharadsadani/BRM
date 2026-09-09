@@ -26,7 +26,9 @@
       var(--bg-0);
     color:var(--text-0); font-family:'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif;
     min-height:100vh; overflow-x:hidden;
+    display:flex; flex-direction:column;
   }
+  #app{ flex:1 0 auto; }
   h1,h2,h3{ text-wrap:balance; margin:0; font-family:'Baloo 2', 'Manrope', system-ui, sans-serif; }
   button{ font-family:inherit; }
   ::selection{ background:var(--magenta); color:white; }
@@ -45,22 +47,67 @@
     .lights span:nth-child(3n){ animation-delay:2s; }
   }
   @keyframes twinkle{ 0%,100%{opacity:.5;} 50%{opacity:1;} }
+  /* top bar: logo pinned left, branding fills the width that's left over.
+     Both header lines are auto-fitted by JS so they never wrap — they shrink instead. */
+  .topbar{ position:relative; padding:6px 16px 6px clamp(64px,9vw,140px); }
+  .brand-logo{
+    position:absolute; left:10px; top:8px; width:clamp(50px,7.5vw,116px); height:auto;
+    background:#ffffff; border-radius:14px; padding:6px;
+    box-shadow:0 8px 24px rgba(0,0,0,.4); z-index:66;
+  }
+  .eyebrow, .tagline{
+    white-space:nowrap; overflow:hidden; text-align:center;
+    font-family:'Baloo 2','Manrope',system-ui,sans-serif; font-weight:800;
+  }
   .eyebrow{
-    text-align:center; color:var(--gold);
-    font-family:'Baloo 2','Manrope',system-ui,sans-serif;
-    font-size:clamp(1.15rem,2.9vw,2.3rem); font-weight:800; letter-spacing:.04em;
-    text-transform:uppercase; margin:8px auto 0; max-width:1240px; padding:0 14px;
-    line-height:1.14; text-wrap:balance; text-shadow:0 2px 16px rgba(0,0,0,.55);
+    color:var(--gold); font-size:56px; letter-spacing:.03em; text-transform:uppercase;
+    margin:6px auto 0; line-height:1.14; text-shadow:0 2px 16px rgba(0,0,0,.55);
   }
   .tagline{
-    text-align:center; color:var(--teal);
-    font-family:'Baloo 2','Manrope',system-ui,sans-serif;
-    font-size:clamp(1.35rem,3.7vw,3rem); font-weight:800; letter-spacing:.01em;
-    margin:2px auto 0; max-width:1240px; padding:0 14px;
-    line-height:1.1; text-wrap:balance; text-shadow:0 3px 20px rgba(52,211,153,.3);
+    color:var(--teal); font-size:50px; letter-spacing:.01em;
+    margin:18px auto 0; line-height:1.12; text-shadow:0 3px 20px rgba(52,211,153,.3);
   }
 
-  #app{ max-width:1180px; margin:0 auto; padding:8px 20px 56px; }
+  /* organisers strip, pinned to the bottom of the screen on every view */
+  .credits{
+    position:fixed; left:0; right:0; bottom:0; z-index:60;
+    padding:9px 12px 11px; border-top:1px solid var(--border);
+    background:rgba(16,9,34,.94); backdrop-filter:blur(8px);
+  }
+  .credits-title{
+    text-align:center; margin:0 0 6px; color:var(--text-2); font-weight:800;
+    font-size:clamp(.72rem,1.1vw,.95rem); letter-spacing:.14em; text-transform:uppercase;
+  }
+  .credits-names{
+    margin:0; text-align:center; white-space:nowrap; overflow-x:auto; padding-bottom:2px;
+    color:#ffffff; font-weight:800; font-size:clamp(.92rem,1.45vw,1.35rem);
+  }
+  .credits-names .star{ color:var(--gold); margin:0 10px; }
+
+  /* phones: trim the chrome so the question and answer pad stay above the fold */
+  @media (max-width:700px){
+    .topbar{ padding:2px 8px 2px 56px; }
+    .brand-logo{ left:7px; top:5px; padding:4px; border-radius:10px; }
+    .lights{ gap:13px; padding-top:6px; }
+    .lights span{ width:7px; height:7px; }
+    .eyebrow{ margin-top:3px; letter-spacing:0; }
+    .tagline{ margin-top:7px; }
+    .credits{ padding:6px 8px 8px; }
+    .credits-title{ font-size:.6rem; margin-bottom:3px; letter-spacing:.1em; }
+    .credits-names{ font-size:.82rem; }
+    .credits-names .star{ margin:0 7px; }
+    body{ padding-bottom:66px; }
+    #app{ padding:4px 14px 16px; }
+    .q-topbar{ margin-top:4px; }
+  }
+  /* very narrow phones: reclaim a little more width for the one-line header */
+  @media (max-width:430px){
+    .topbar{ padding:2px 6px 2px 48px; }
+    .brand-logo{ width:42px; left:5px; top:5px; padding:3px; border-radius:8px; }
+  }
+
+  #app{ max-width:1180px; margin:0 auto; padding:8px 20px 24px; width:100%; }
+  body{ padding-bottom:92px; }   /* clears the fixed organisers strip */
   .screen{ display:none; }
   .screen.active{ display:block; animation:fadein .35s ease; }
   @keyframes fadein{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;} }
@@ -167,7 +214,7 @@
   .timer-track{ stroke:rgba(255,255,255,0.12); }
   .timer-fill{ stroke:var(--gold); stroke-linecap:round; transition:stroke .2s; }
   .timer-num{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:clamp(2rem,3.2vw,3rem); color:#ffffff; }
-  .q-dir{ margin:18px 0 4px; text-align:center; font-weight:800; letter-spacing:.1em; font-size:clamp(1.05rem,1.9vw,1.6rem); color:var(--gold); text-transform:uppercase; }
+  .q-dir{ margin:12px 0 2px; text-align:center; font-weight:800; letter-spacing:.1em; font-size:clamp(1.05rem,1.9vw,1.6rem); color:var(--gold); text-transform:uppercase; }
   .q-prompt{
     text-align:center; font-size:clamp(1.7rem,3.9vw,3.1rem); font-weight:800; color:#ffffff;
     max-width:1080px; margin:8px auto 20px; line-height:1.2; text-shadow:0 2px 18px rgba(0,0,0,.45);
@@ -203,13 +250,13 @@
   .leave-link{ background:none; border:none; color:var(--text-2); font-size:.95rem; font-weight:700; cursor:pointer; text-decoration:underline; }
   .leave-link:hover{ color:var(--danger); }
 
-  .host-progress{ margin-top:30px; }
+  .host-progress{ margin-top:16px; }
   .host-progress-title{ text-align:center; color:var(--text-2); font-size:.82rem; font-weight:800; letter-spacing:.1em; text-transform:uppercase; margin-bottom:14px; }
   .progress-grid{ display:flex; flex-wrap:wrap; gap:10px; justify-content:center; }
   .progress-chip{ padding:9px 16px; border-radius:12px; background:var(--panel-strong); border:1px solid var(--border); font-weight:700; font-size:.85rem; color:var(--text-1); }
   .progress-chip.done{ border-color:var(--teal); color:var(--teal); }
 
-  .end-round-row{ display:flex; justify-content:center; margin-top:26px; }
+  .end-round-row{ display:flex; justify-content:center; gap:12px; margin-top:16px; flex-wrap:wrap; }
 
   .winner-banner{
     text-align:center; padding:28px 20px; border-radius:24px; margin:18px 0 26px; position:relative; overflow:hidden;
@@ -258,16 +305,24 @@
   .conn-dot{ position:fixed; top:14px; right:16px; display:flex; align-items:center; gap:8px; font-size:.75rem; color:var(--text-2); font-weight:700; z-index:60; }
   .conn-dot .dot{ width:8px; height:8px; border-radius:50%; background:var(--danger); }
   .conn-dot.ok .dot{ background:var(--teal); }
+  /* on phones the header runs full width, so drop the badge to the bottom corner
+     (declared after the base rule so it actually wins the cascade) */
+  @media (max-width:700px){
+    .conn-dot{ top:auto; bottom:72px; right:10px; font-size:.7rem; }
+  }
 </style>
 </head>
 <body>
 
 <div class="conn-dot" id="conn-dot"><span class="dot"></span><span id="conn-label">Connecting…</span></div>
-<div class="lights" aria-hidden="true">
-  <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
-</div>
-<p class="eyebrow">Shree Balaji Rajasthani Mandal &middot; Ganesh Utsav 2026</p>
-<p class="tagline">Guess or Mess &mdash; Fastest Finger First</p>
+<header class="topbar">
+  <img class="brand-logo" src="logo.png" alt="Sri Balaji Rajasthani Mandal, Ameerpet" onerror="this.style.display='none';">
+  <div class="lights" aria-hidden="true">
+    <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+  </div>
+  <p class="eyebrow">Shree Balaji Rajasthani Mandal &middot; Ganesh Utsav 2026</p>
+  <p class="tagline">Guess or Mess &mdash; Fastest Finger First</p>
+</header>
 
 <div id="app">
 
@@ -422,6 +477,11 @@
 
 </div>
 
+<footer class="credits">
+  <p class="credits-title">Organisers &amp; Concept Creators</p>
+  <p class="credits-names"><b>Arpita Bhakkad</b><span class="star">&#9733;</span><b>Ishanvi Pugalia</b><span class="star">&#9733;</span><b>Mahesh Soni</b><span class="star">&#9733;</span><b>Anand Bhakkad</b><span class="star">&#9733;</span><b>Rahul Pugalia</b><span class="star">&#9733;</span><b>Sharad Sadani</b></p>
+</footer>
+
 <canvas id="confetti-canvas"></canvas>
 <div class="toast" id="toast"></div>
 
@@ -484,6 +544,33 @@
     toast._h = setTimeout(function(){ t.classList.remove('show'); }, 2400);
   }
   function fmtTime(ms){ return (ms/1000).toFixed(1) + 's'; }
+
+  /* Header lines must never wrap — measure each one and shrink it until it fits
+     the available width on a single line. Re-run on resize and once webfonts land,
+     since Baloo 2 changes the metrics after it loads. */
+  function fitHeaderLines(){
+    [['eyebrow', 56, 9], ['tagline', 50, 9]].forEach(function(cfg){
+      var el = document.querySelector('.' + cfg[0]);
+      if (!el) return;
+      var maxPx = cfg[1], minPx = cfg[2];
+      el.style.fontSize = maxPx + 'px';
+      var avail = el.clientWidth;
+      var needed = el.scrollWidth;
+      if (avail > 0 && needed > avail){
+        var scaled = Math.floor(maxPx * (avail / needed) * 0.985);
+        el.style.fontSize = Math.max(minPx, scaled) + 'px';
+      }
+    });
+  }
+  fitHeaderLines();
+  var fitTimer = null;
+  window.addEventListener('resize', function(){
+    clearTimeout(fitTimer);
+    fitTimer = setTimeout(fitHeaderLines, 120);
+  });
+  window.addEventListener('orientationchange', function(){ setTimeout(fitHeaderLines, 200); });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitHeaderLines);
+  setTimeout(fitHeaderLines, 600);
 
   /* connection indicator */
   socket.on('connect', function(){ $('conn-dot').classList.add('ok'); $('conn-label').textContent = 'Live'; });
