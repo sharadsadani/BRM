@@ -207,7 +207,7 @@
 
   .q-topbar{ display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-top:10px; }
   .cat-badge{ padding:10px 22px; border-radius:999px; font-weight:800; font-size:clamp(1rem,1.5vw,1.35rem); color:#170c30; letter-spacing:.02em; }
-  .q-count{ color:var(--text-0); font-weight:800; font-size:clamp(1.05rem,1.6vw,1.5rem); }
+  .q-count{ flex:1; text-align:center; color:var(--text-0); font-weight:800; font-size:clamp(1.05rem,1.6vw,1.5rem); }
   .timer-wrap{ position:relative; width:clamp(84px,8vw,116px); height:clamp(84px,8vw,116px); }
   .timer-wrap svg{ transform:rotate(-90deg); width:100%; height:100%; }
   .timer-wrap circle{ fill:none; stroke-width:8; }
@@ -259,30 +259,50 @@
   .end-round-row{ display:flex; justify-content:center; gap:12px; margin-top:16px; flex-wrap:wrap; }
 
   .winner-banner{
-    text-align:center; padding:28px 20px; border-radius:24px; margin:18px 0 26px; position:relative; overflow:hidden;
+    text-align:center; padding:16px 18px; border-radius:20px; margin:10px 0 14px; position:relative; overflow:hidden;
     background:linear-gradient(135deg, rgba(255,211,77,0.16), rgba(236,72,153,0.14)); border:2px solid var(--gold); box-shadow:0 0 50px -10px rgba(255,211,77,0.5);
   }
   .winner-banner.none{ border-color:var(--border); box-shadow:none; background:var(--panel); }
   .winner-banner .tag{ font-size:clamp(.85rem,1.3vw,1.05rem); letter-spacing:.14em; text-transform:uppercase; font-weight:800; color:var(--gold); }
-  .winner-banner .who{ font-family:'Baloo 2',sans-serif; font-weight:800; font-size:clamp(2rem,5vw,3.6rem); margin-top:8px; color:#ffffff; line-height:1.15; }
-  .winner-banner .time{ margin-top:8px; color:var(--text-0); font-weight:800; font-size:clamp(1.1rem,2vw,1.5rem); }
+  .winner-banner .who{ font-family:'Baloo 2',sans-serif; font-weight:800; font-size:clamp(1.8rem,4vw,2.9rem); margin-top:4px; color:#ffffff; line-height:1.12; }
+  .winner-banner .time{ margin-top:4px; color:var(--text-0); font-weight:800; font-size:clamp(1rem,1.7vw,1.35rem); }
   #confetti-canvas{ position:fixed; inset:0; pointer-events:none; z-index:70; }
-  .correct-strip{ display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin:0 0 24px; align-items:center; }
+  .correct-strip{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin:0 0 14px; align-items:center; }
   .correct-chip{ padding:12px 20px; border-radius:14px; background:var(--panel-strong); border:2px solid var(--border); font-weight:800; font-size:clamp(1.05rem,1.9vw,1.5rem); color:#ffffff; }
   .correct-chip b{ color:var(--gold); margin-right:8px; }
   .arrow{ color:var(--text-1); font-weight:800; font-size:1.4rem; }
-  .table-wrap{ overflow-x:auto; border-radius:18px; border:1px solid var(--border-soft); }
-  table{ width:100%; border-collapse:collapse; min-width:620px; }
-  th,td{ padding:15px 18px; text-align:left; font-size:clamp(1.02rem,1.6vw,1.3rem); font-weight:700; }
-  thead th{ background:rgba(255,255,255,0.06); color:var(--text-1); font-size:clamp(.8rem,1.1vw,.95rem); text-transform:uppercase; letter-spacing:.08em; font-weight:800; }
-  tbody tr{ border-top:1px solid var(--border-soft); }
-  tbody tr.winner-row{ background:linear-gradient(90deg, rgba(255,211,77,0.14), transparent); }
-  td.name-cell{ font-weight:800; color:#ffffff; }
-  td.correct-yes{ color:var(--teal); font-weight:800; }
-  td.correct-no{ color:var(--text-1); font-weight:700; }
-  .rank-pill{ display:inline-flex; align-items:center; justify-content:center; min-width:34px; height:34px; padding:0 10px; border-radius:10px; font-weight:800; background:var(--panel-strong); color:var(--text-0); font-size:1.1rem; }
-  .rank-pill.gold{ background:var(--gold); color:#170c30; }
-  .results-actions{ display:flex; justify-content:center; gap:14px; margin-top:30px; flex-wrap:wrap; }
+  /* Scoreboard: a light, high-contrast panel against the dark stage so it reads
+     from across the room. Font and padding are driven by --tbl-font, which JS
+     shrinks until the whole table fits the space available. */
+  .table-wrap{
+    --tbl-font:20px;
+    overflow:auto; border-radius:16px; background:#ffffff;
+    box-shadow:0 18px 44px -12px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.14);
+    max-width:1100px; margin:0 auto;
+  }
+  table{ width:100%; border-collapse:collapse; table-layout:auto; }
+  th,td{
+    padding:calc(var(--tbl-font) * .62) calc(var(--tbl-font) * .75);
+    text-align:left; font-size:var(--tbl-font); font-weight:700; white-space:nowrap;
+  }
+  thead th{
+    background:#241a4d; color:#e9e3ff; font-size:calc(var(--tbl-font) * .68);
+    text-transform:uppercase; letter-spacing:.09em; font-weight:800;
+  }
+  tbody tr{ border-top:1px solid #e2e8f0; color:#1e293b; }
+  tbody tr:nth-child(even){ background:#f6f7fb; }
+  tbody tr.winner-row{ background:#fff4cc; box-shadow:inset 5px 0 0 #eab308; }
+  tbody tr.winner-row td{ color:#3f2d00; font-weight:800; }
+  td.name-cell{ font-weight:800; color:#0f172a; }
+  td.correct-yes{ color:#047857; font-weight:800; }
+  td.correct-no{ color:#64748b; font-weight:700; }
+  .rank-pill{
+    display:inline-flex; align-items:center; justify-content:center;
+    min-width:calc(var(--tbl-font) * 1.7); padding:calc(var(--tbl-font) * .16) calc(var(--tbl-font) * .45);
+    border-radius:8px; font-weight:800; background:#e2e8f0; color:#475569; font-size:calc(var(--tbl-font) * .88);
+  }
+  .rank-pill.gold{ background:#eab308; color:#2b1d00; }
+  .results-actions{ display:flex; justify-content:center; gap:14px; margin-top:16px; flex-wrap:wrap; }
 
   .final-title{ text-align:center; font-size:clamp(2rem,5vw,3rem); margin:20px 0 6px; background:linear-gradient(120deg, var(--gold), var(--saffron) 50%, var(--magenta)); -webkit-background-clip:text; background-clip:text; color:transparent; }
   .final-sub{ text-align:center; color:var(--text-1); font-weight:600; margin-bottom:30px; }
@@ -359,7 +379,6 @@
           <input type="text" id="game-link" readonly aria-label="Player link — tap to select, then copy">
           <button class="btn small" id="btn-copy-link">Copy</button>
         </div>
-        <p class="copy-note">Send this link to your players (WhatsApp works great). They open it, choose "I'm a Player", and enter today's PIN.</p>
       </div>
 
       <div class="panel join-card">
@@ -415,7 +434,6 @@
   <!-- QUESTION -->
   <section class="screen" id="screen-question">
     <div class="q-topbar">
-      <span class="cat-badge" id="q-cat-badge"></span>
       <span class="q-count" id="q-count"></span>
       <div class="timer-wrap">
         <svg viewBox="0 0 78 78">
@@ -451,7 +469,7 @@
   <section class="screen" id="screen-results">
     <div class="winner-banner" id="winner-banner"></div>
     <div class="correct-strip" id="correct-strip"></div>
-    <div class="table-wrap">
+    <div class="table-wrap" id="table-wrap">
       <table>
         <thead><tr><th>Team</th><th>Player</th><th>Answer</th><th>Correct?</th><th>Time</th><th>Rank</th></tr></thead>
         <tbody id="results-tbody"></tbody>
@@ -748,8 +766,6 @@
     currentQuestion = payload;
     myOrder = []; mySubmitted = false;
     var q = payload.q;
-    $('q-cat-badge').textContent = CAT_LABEL[q.cat];
-    $('q-cat-badge').style.background = 'var(' + CAT_VAR[q.cat] + ')';
     $('q-count').textContent = 'Question ' + payload.qNum + ' of ' + payload.total;
     $('q-dir').textContent = q.dir;
     $('q-prompt').textContent = q.prompt;
@@ -850,6 +866,8 @@
     }
     if (payload.winner) fireConfetti();
     showScreen('screen-results');
+    fitResultsTable();               // needs the screen visible to measure
+    setTimeout(fitResultsTable, 60); // and again once fonts/layout settle
   }
 
   function renderWinnerBanner(winner){
@@ -871,6 +889,37 @@
       return i < explain.length - 1 ? chip + '<span class="arrow">→</span>' : chip;
     }).join('');
   }
+  /* Shrink the scoreboard until it fits both the width available and the height
+     left between it and the buttons/organisers strip — however many players there are. */
+  function fitResultsTable(){
+    var wrap = $('table-wrap');
+    if (!wrap) return;
+    var table = wrap.querySelector('table');
+    if (!table) return;
+    var MAX = 20, MIN = 8;
+    var size = MAX;
+    wrap.style.setProperty('--tbl-font', size + 'px');
+
+    var availW = wrap.clientWidth;
+    if (availW > 0 && table.scrollWidth > availW){
+      size = Math.floor(size * (availW / table.scrollWidth) * 0.98);
+      size = Math.max(MIN, Math.min(MAX, size));
+      wrap.style.setProperty('--tbl-font', size + 'px');
+    }
+
+    var reserve = 128;                       // action buttons + organisers strip
+    var availH = window.innerHeight - wrap.getBoundingClientRect().top - reserve;
+    var guard = 0;
+    while (wrap.offsetHeight > availH && size > MIN && guard < 40){
+      size -= 1; guard++;
+      wrap.style.setProperty('--tbl-font', size + 'px');
+    }
+  }
+  window.addEventListener('resize', function(){
+    clearTimeout(fitResultsTable._t);
+    fitResultsTable._t = setTimeout(fitResultsTable, 140);
+  });
+
   function renderResultsTable(results){
     $('results-tbody').innerHTML = results.map(function(r){
       return '<tr class="' + (r.rank === 1 ? 'winner-row' : '') + '">' +
