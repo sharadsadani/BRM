@@ -145,18 +145,19 @@
     filter:drop-shadow(0 6px 30px rgba(236,72,153,0.25));
   }
   .home-sub{ max-width:640px; margin:16px auto 0; color:var(--text-1); font-size:1.15rem; font-weight:600; line-height:1.5; }
-  .role-row{ display:flex; gap:26px; justify-content:center; flex-wrap:wrap; margin-top:34px; }
+  .role-row{ display:flex; gap:20px; justify-content:center; flex-wrap:wrap; margin-top:22px; }
   .role-card{
-    width:clamp(270px,30vw,350px); padding:36px 28px; text-align:center; cursor:pointer;
+    width:clamp(220px,24vw,280px); padding:22px 20px; text-align:center; cursor:pointer;
     border:2px solid rgba(255,255,255,0.30); border-radius:26px;
     background:linear-gradient(160deg, rgba(255,255,255,0.17), rgba(255,255,255,0.09));
     box-shadow:0 16px 40px -14px rgba(0,0,0,.65);
     transition:transform .15s ease, border-color .15s ease, background .15s ease;
   }
   .role-card:hover{ transform:translateY(-3px); border-color:var(--gold); background:linear-gradient(160deg, rgba(255,255,255,0.23), rgba(255,255,255,0.12)); }
-  .role-card .emoji{ font-size:3.4rem; margin-bottom:12px; }
-  .role-card h3{ font-size:clamp(1.4rem,2.1vw,1.8rem); color:#ffffff; margin-bottom:10px; }
-  .role-card p{ color:#ded7f5; font-size:clamp(1rem,1.4vw,1.15rem); margin:0; line-height:1.45; font-weight:600; }
+  .role-card .emoji{ font-size:2.4rem; margin-bottom:6px; }
+  .role-card h3{ font-size:clamp(1.2rem,1.7vw,1.45rem); color:#ffffff; margin-bottom:6px; }
+  .role-card p{ color:#ded7f5; font-size:clamp(.9rem,1.15vw,1rem); margin:0; line-height:1.35; font-weight:600; }
+  .home-hero{ padding-top:26px; }
   .cat-row{ display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin:30px 0 6px; }
   .cat-chip{ padding:8px 18px; border-radius:999px; font-weight:800; font-size:.85rem; color:#170c30; }
 
@@ -231,7 +232,22 @@
   }
   .opt-row{ display:grid; grid-template-columns:repeat(2,1fr); gap:14px; max-width:1080px; margin:0 auto 26px; }
   @media (min-width:760px){ .opt-row{ grid-template-columns:repeat(4,1fr); } }
-  .opt-card{ padding:18px 12px; text-align:center; border-radius:18px; background:var(--panel-strong); border:2px solid var(--border); }
+  .opt-card{
+    position:relative; padding:16px 12px; text-align:center; border-radius:18px;
+    background:var(--panel-strong); border:2px solid var(--border);
+    font-family:inherit; width:100%; display:block;
+  }
+  /* players tap these directly to build their order */
+  button.opt-card{ cursor:pointer; transition:transform .12s ease, border-color .12s ease; }
+  button.opt-card:hover:not(:disabled){ border-color:var(--gold); transform:translateY(-2px); }
+  button.opt-card:disabled{ cursor:default; }
+  button.opt-card.picked{ background:linear-gradient(135deg,var(--saffron),var(--magenta)); border-color:transparent; }
+  button.opt-card.picked .opt-letter{ background:#ffffff; color:#170c30; }
+  .pick-badge{
+    position:absolute; top:-12px; right:-10px; width:34px; height:34px; border-radius:50%;
+    background:var(--gold); color:#170c30; font-weight:800; font-size:1.05rem;
+    display:flex; align-items:center; justify-content:center; box-shadow:0 4px 12px rgba(0,0,0,.45);
+  }
   .opt-letter{
     display:inline-flex; align-items:center; justify-content:center;
     width:clamp(38px,3.4vw,48px); height:clamp(38px,3.4vw,48px); border-radius:50%;
@@ -244,16 +260,19 @@
     font-weight:800; font-size:clamp(.95rem,1.4vw,1.15rem);
   }
 
-  .answer-pad{ max-width:560px; margin:0 auto; }
-  .ans-btns{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:18px; }
-  .ans-btn{
-    position:relative; aspect-ratio:1/1; border-radius:18px; border:3px solid var(--border); background:rgba(255,255,255,0.07);
-    color:#ffffff; font-weight:800; font-size:clamp(1.8rem,5vw,2.6rem); cursor:pointer;
+  /* the order the player has tapped so far — fills itself as options are clicked */
+  .answer-pad{ max-width:900px; margin:0 auto; }
+  .order-slots{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:12px; }
+  .slot{
+    border-radius:14px; border:2px dashed rgba(255,255,255,0.28); background:rgba(255,255,255,0.04);
+    padding:10px 6px; text-align:center; min-height:64px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
   }
-  .ans-btn:hover:not(:disabled){ border-color:var(--gold); }
-  .ans-btn:disabled{ cursor:default; }
-  .ans-btn.picked{ background:linear-gradient(135deg,var(--saffron),var(--magenta)); border-color:transparent; color:white; }
-  .ans-btn .badge{ position:absolute; top:-10px; right:-10px; width:32px; height:32px; border-radius:50%; background:var(--gold); color:#170c30; font-size:1rem; display:flex; align-items:center; justify-content:center; font-weight:800; }
+  .slot .slot-num{ font-size:.72rem; font-weight:800; letter-spacing:.1em; color:var(--text-2); text-transform:uppercase; }
+  .slot .slot-val{ font-weight:800; color:var(--text-2); font-size:clamp(1rem,1.8vw,1.3rem); }
+  .slot.filled{ border-style:solid; border-color:transparent; background:linear-gradient(135deg,var(--saffron),var(--magenta)); }
+  .slot.filled .slot-num{ color:rgba(255,255,255,.85); }
+  .slot.filled .slot-val{ color:#ffffff; }
   .pad-status{ text-align:center; font-weight:800; color:var(--text-1); font-size:clamp(1.05rem,2vw,1.3rem); }
   .pad-status.locked{ color:var(--teal); }
   .clear-link{ display:block; margin:0 auto; background:none; border:none; color:var(--text-1); font-size:1.05rem; font-weight:800; cursor:pointer; text-decoration:underline; }
@@ -374,6 +393,21 @@
     </div>
   </section>
 
+  <!-- HOST PASSWORD -->
+  <section class="screen" id="screen-host-auth">
+    <div class="panel join-card" style="max-width:420px; margin:20px auto 0;">
+      <h2>&#128274; Host Login</h2>
+      <p class="hint">Enter the host password to run the show.</p>
+      <div class="field">
+        <label for="in-host-pass">Password</label>
+        <input type="password" id="in-host-pass" placeholder="Password" autocomplete="off">
+      </div>
+      <div class="err-msg" id="host-auth-err"></div>
+      <button class="btn wide" id="btn-host-auth">Continue &#10003;</button>
+      <p style="text-align:center; margin:14px 0 0;"><button class="leave-link" id="btn-host-back">Back</button></p>
+    </div>
+  </section>
+
   <!-- HOST LOBBY -->
   <section class="screen" id="screen-host-lobby">
     <div class="lobby-grid">
@@ -449,7 +483,7 @@
           <circle class="timer-track" cx="39" cy="39" r="33"></circle>
           <circle class="timer-fill" id="timer-fill" cx="39" cy="39" r="33" stroke-dasharray="207.3" stroke-dashoffset="0"></circle>
         </svg>
-        <div class="timer-num tabular" id="timer-num">15</div>
+        <div class="timer-num tabular" id="timer-num">20</div>
       </div>
     </div>
     <p class="everyone-back" id="everyone-back" hidden>&#127881; Everyone&rsquo;s back in &mdash; all players are in contention again!</p>
@@ -459,8 +493,8 @@
 
     <!-- player-only answer pad -->
     <div class="answer-pad" id="answer-pad" hidden>
-      <div class="ans-btns" id="ans-btns"></div>
-      <div class="pad-status" id="pad-status">Tap A&ndash;D in order</div>
+      <div class="order-slots" id="order-slots"></div>
+      <div class="pad-status" id="pad-status">Tap the options above in order</div>
     </div>
 
     <!-- host-only live progress -->
@@ -558,10 +592,45 @@
 
   function $(id){ return document.getElementById(id); }
   function esc(s){ return String(s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  /* Nothing should ever need scrolling: measure the active screen and, if it is
+     taller than the room between the header and the organisers strip, scale the
+     whole app down until it fits. Cheaper and far more reliable than trying to
+     hand-tune every screen for every device height. */
+  function fitToScreen(){
+    var app = $('app');
+    if (!app) return;
+    app.style.transform = 'none';
+    app.style.marginBottom = '0px';
+    var credits = document.querySelector('.credits');
+    var reserve = (credits ? credits.offsetHeight : 60) + 12;
+    document.body.style.paddingBottom = reserve + 'px';
+    var top = app.getBoundingClientRect().top;
+    var avail = window.innerHeight - top - reserve;
+    var natural = app.offsetHeight;
+    if (avail > 80 && natural > avail){
+      var s = Math.max(0.35, (avail / natural) * 0.995);
+      app.style.transformOrigin = 'top center';
+      app.style.transform = 'scale(' + s + ')';
+      // a transform shrinks the pixels but NOT the layout box, so claw back the
+      // difference or the page would still scroll by the leftover height
+      app.style.marginBottom = -(natural - natural * s) + 'px';
+    }
+  }
+  var fitScreenTimer = null;
+  function scheduleFit(){
+    if (window.requestAnimationFrame) requestAnimationFrame(fitToScreen);
+    else setTimeout(fitToScreen, 0);
+    clearTimeout(fitScreenTimer);
+    fitScreenTimer = setTimeout(fitToScreen, 220);   // again once fonts/layout settle
+  }
+  window.addEventListener('resize', scheduleFit);
+  window.addEventListener('orientationchange', function(){ setTimeout(fitToScreen, 250); });
+
   function showScreen(id){
     document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
     $(id).classList.add('active');
     window.scrollTo({top:0, behavior:'auto'});
+    scheduleFit();
   }
   function toast(msg, isErr){
     var t = $('toast');
@@ -596,21 +665,38 @@
     fitTimer = setTimeout(fitHeaderLines, 120);
   });
   window.addEventListener('orientationchange', function(){ setTimeout(fitHeaderLines, 200); });
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitHeaderLines);
-  setTimeout(fitHeaderLines, 600);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function(){ fitHeaderLines(); fitToScreen(); });
+  setTimeout(function(){ fitHeaderLines(); fitToScreen(); }, 600);
 
   /* connection indicator */
   socket.on('connect', function(){ $('conn-dot').classList.add('ok'); $('conn-label').textContent = 'Live'; });
   socket.on('disconnect', function(){ $('conn-dot').classList.remove('ok'); $('conn-label').textContent = 'Reconnecting…'; });
 
   /* ---------------- role selection ---------------- */
+  var HOST_PASSWORD = 'sharad';
   $('pick-host').addEventListener('click', function(){
+    $('in-host-pass').value = '';
+    $('host-auth-err').textContent = '';
+    showScreen('screen-host-auth');
+    setTimeout(function(){ $('in-host-pass').focus(); }, 80);
+  });
+  function tryHostLogin(){
+    var pass = $('in-host-pass').value.trim();
+    if (pass.toLowerCase() !== HOST_PASSWORD){
+      $('host-auth-err').textContent = 'Wrong password — try again.';
+      var card = document.querySelector('#screen-host-auth .join-card');
+      card.classList.remove('shake'); void card.offsetWidth; card.classList.add('shake');
+      return;
+    }
     role = 'host';
     forgetSession();
     sessionStorage.setItem('ffRole', 'host');
     showScreen('screen-host-lobby');
     socket.emit('host:generatePin');
-  });
+  }
+  $('btn-host-auth').addEventListener('click', tryHostLogin);
+  $('in-host-pass').addEventListener('keydown', function(e){ if (e.key === 'Enter') tryHostLogin(); });
+  $('btn-host-back').addEventListener('click', function(){ showScreen('screen-role'); });
   $('pick-player').addEventListener('click', function(){
     role = 'player';
     showScreen('screen-player-join');
@@ -778,10 +864,6 @@
     $('q-count').textContent = 'Question ' + payload.qNum + ' of ' + payload.total;
     $('q-dir').textContent = q.dir;
     $('q-prompt').textContent = q.prompt;
-    $('opt-row').innerHTML = ['A','B','C','D'].map(function(L){
-      return '<div class="opt-card"><div class="opt-letter">' + L + '</div><div class="opt-text">' + esc(q.opts[L]) + '</div></div>';
-    }).join('');
-
     $('everyone-back').hidden = !payload.everyoneBack;
 
     if (role === 'player'){
@@ -789,6 +871,7 @@
       $('host-progress').hidden = true;
       renderAnswerPad();
     } else if (role === 'host'){
+      renderOptionCards(false);
       $('answer-pad').hidden = true;
       $('host-progress').hidden = false;
       $('host-progress-title').textContent = 'In Play (' + payload.activeCount + (payload.activeCount === 1 ? ' player' : ' players') + ')';
@@ -799,22 +882,59 @@
     showScreen('screen-question');
   }
 
-  function renderAnswerPad(){
-    var wrap = $('ans-btns');
-    wrap.innerHTML = ['A','B','C','D'].map(function(L){
+  /* The four option cards ARE the input: a player taps them in the order they want
+     and the slots underneath fill in by themselves. Nothing is typed. */
+  function renderOptionCards(interactive){
+    if (!currentQuestion) return;
+    var q = currentQuestion.q;
+    var row = $('opt-row');
+    row.innerHTML = ['A','B','C','D'].map(function(L){
       var idx = myOrder.indexOf(L);
-      var picked = idx > -1;
-      var disabled = mySubmitted || picked;
-      return '<button class="ans-btn' + (picked ? ' picked' : '') + '" data-letter="' + L + '"' + (disabled ? ' disabled' : '') + '>' +
-        L + (picked ? '<span class="badge">' + (idx+1) + '</span>' : '') + '</button>';
+      var picked = interactive && idx > -1;
+      var tag = interactive ? 'button' : 'div';
+      var attrs = interactive ? ' type="button" data-letter="' + L + '"' + ((mySubmitted || idx > -1) ? ' disabled' : '') : '';
+      return '<' + tag + ' class="opt-card' + (picked ? ' picked' : '') + '"' + attrs + '>' +
+        (picked ? '<span class="pick-badge">' + (idx + 1) + '</span>' : '') +
+        '<div class="opt-letter">' + L + '</div>' +
+        '<div class="opt-text">' + esc(q.opts[L]) + '</div>' +
+      '</' + tag + '>';
     }).join('');
-    wrap.querySelectorAll('.ans-btn').forEach(function(btn){
-      btn.addEventListener('click', function(){ tapOption(btn.getAttribute('data-letter')); });
-    });
+    if (interactive){
+      row.querySelectorAll('button.opt-card').forEach(function(btn){
+        btn.addEventListener('click', function(){ tapOption(btn.getAttribute('data-letter')); });
+      });
+    }
+  }
+
+  function renderAnswerPad(){
+    renderOptionCards(true);
+    var q = currentQuestion ? currentQuestion.q : null;
+    var labels = ['1st','2nd','3rd','4th'];
+    $('order-slots').innerHTML = labels.map(function(lab, i){
+      var L = myOrder[i];
+      var val = L ? (L + ' · ' + esc(q.opts[L])) : '—';
+      return '<div class="slot' + (L ? ' filled' : '') + '">' +
+        '<span class="slot-num">' + lab + '</span>' +
+        '<span class="slot-val">' + val + '</span>' +
+      '</div>';
+    }).join('');
+
     var status = $('pad-status');
-    if (mySubmitted){ status.textContent = '✓ Locked in — good luck!'; status.className = 'pad-status locked'; }
-    else if (myOrder.length){ status.innerHTML = ''; var b = document.createElement('button'); b.className='clear-link'; b.textContent='Clear'; b.addEventListener('click', clearOrder); status.appendChild(b); }
-    else { status.textContent = 'Tap A–D in order'; status.className = 'pad-status'; }
+    if (mySubmitted){
+      status.textContent = '✓ Locked in — good luck!';
+      status.className = 'pad-status locked';
+    } else if (myOrder.length){
+      status.className = 'pad-status';
+      status.innerHTML = '';
+      var b = document.createElement('button');
+      b.className = 'clear-link';
+      b.textContent = 'Clear and start again';
+      b.addEventListener('click', clearOrder);
+      status.appendChild(b);
+    } else {
+      status.textContent = 'Tap the options above in your chosen order';
+      status.className = 'pad-status';
+    }
   }
   function tapOption(letter){
     if (mySubmitted || myOrder.indexOf(letter) > -1) return;
@@ -876,7 +996,7 @@
     if (payload.winner) fireConfetti();
     showScreen('screen-results');
     fitResultsTable();               // needs the screen visible to measure
-    setTimeout(fitResultsTable, 60); // and again once fonts/layout settle
+    setTimeout(function(){ fitResultsTable(); scheduleFit(); }, 60);
   }
 
   function renderWinnerBanner(winner){
