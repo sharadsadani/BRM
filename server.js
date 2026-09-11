@@ -12,7 +12,7 @@ const io = new Server(server);
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-const ROUND_MS = 15000;
+const ROUND_MS = 20000;   // seconds allowed per question
 
 /* ---------------- question bank (from Ganesh Utsav 2026 quiz deck) ---------------- */
 const QUESTIONS = [
