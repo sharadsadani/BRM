@@ -273,6 +273,9 @@
   .slot.filled{ border-style:solid; border-color:transparent; background:linear-gradient(135deg,var(--saffron),var(--magenta)); }
   .slot.filled .slot-num{ color:rgba(255,255,255,.85); }
   .slot.filled .slot-val{ color:#ffffff; }
+  button.slot{ font-family:inherit; cursor:pointer; }
+  button.slot:hover{ filter:brightness(1.12); box-shadow:0 0 0 2px var(--gold); }
+  .pad-hint{ display:block; color:var(--text-2); font-weight:700; font-size:.92rem; margin-bottom:4px; }
   .pad-status{ text-align:center; font-weight:800; color:var(--text-1); font-size:clamp(1.05rem,2vw,1.3rem); }
   .pad-status.locked{ color:var(--teal); }
   .clear-link{ display:block; margin:0 auto; background:none; border:none; color:var(--text-1); font-size:1.05rem; font-weight:800; cursor:pointer; text-decoration:underline; }
@@ -892,7 +895,9 @@
       var idx = myOrder.indexOf(L);
       var picked = interactive && idx > -1;
       var tag = interactive ? 'button' : 'div';
-      var attrs = interactive ? ' type="button" data-letter="' + L + '"' + ((mySubmitted || idx > -1) ? ' disabled' : '') : '';
+      // a picked card stays clickable so the player can tap it again to undo it —
+      // only a submitted answer locks everything
+      var attrs = interactive ? ' type="button" data-letter="' + L + '"' + (mySubmitted ? ' disabled' : '') : '';
       return '<' + tag + ' class="opt-card' + (picked ? ' picked' : '') + '"' + attrs + '>' +
         (picked ? '<span class="pick-badge">' + (idx + 1) + '</span>' : '') +
         '<div class="opt-letter">' + L + '</div>' +
@@ -910,14 +915,21 @@
     renderOptionCards(true);
     var q = currentQuestion ? currentQuestion.q : null;
     var labels = ['1st','2nd','3rd','4th'];
-    $('order-slots').innerHTML = labels.map(function(lab, i){
+    var slots = $('order-slots');
+    slots.innerHTML = labels.map(function(lab, i){
       var L = myOrder[i];
       var val = L ? (L + ' · ' + esc(q.opts[L])) : '—';
-      return '<div class="slot' + (L ? ' filled' : '') + '">' +
+      var clickable = L && !mySubmitted;
+      var tag = clickable ? 'button' : 'div';
+      var attrs = clickable ? ' type="button" data-idx="' + i + '" title="Tap to remove"' : '';
+      return '<' + tag + ' class="slot' + (L ? ' filled' : '') + '"' + attrs + '>' +
         '<span class="slot-num">' + lab + '</span>' +
         '<span class="slot-val">' + val + '</span>' +
-      '</div>';
+      '</' + tag + '>';
     }).join('');
+    slots.querySelectorAll('button.slot').forEach(function(btn){
+      btn.addEventListener('click', function(){ removePick(Number(btn.getAttribute('data-idx'))); });
+    });
 
     var status = $('pad-status');
     if (mySubmitted){
@@ -925,10 +937,10 @@
       status.className = 'pad-status locked';
     } else if (myOrder.length){
       status.className = 'pad-status';
-      status.innerHTML = '';
+      status.innerHTML = '<span class="pad-hint">Tap a chosen option again to undo it &mdash; your 4th pick submits the answer.</span> ';
       var b = document.createElement('button');
       b.className = 'clear-link';
-      b.textContent = 'Clear and start again';
+      b.textContent = 'Clear all';
       b.addEventListener('click', clearOrder);
       status.appendChild(b);
     } else {
@@ -936,13 +948,22 @@
       status.className = 'pad-status';
     }
   }
+  /* Picks stay changeable right up until the fourth one, which locks the answer
+     in and submits it. Tapping an already-chosen option removes it. */
   function tapOption(letter){
-    if (mySubmitted || myOrder.indexOf(letter) > -1) return;
+    if (mySubmitted) return;
+    var at = myOrder.indexOf(letter);
+    if (at > -1){ myOrder.splice(at, 1); renderAnswerPad(); return; }
     myOrder.push(letter);
     if (myOrder.length === 4){
       mySubmitted = true;
       socket.emit('player:submit', { token: getToken(), order: myOrder.slice() });
     }
+    renderAnswerPad();
+  }
+  function removePick(i){
+    if (mySubmitted || i < 0 || i >= myOrder.length) return;
+    myOrder.splice(i, 1);
     renderAnswerPad();
   }
   function clearOrder(){ if (mySubmitted) return; myOrder = []; renderAnswerPad(); }
