@@ -419,6 +419,7 @@
         <div class="pin-digits" id="pin-digits"></div>
         <div class="pin-actions">
           <button class="btn small secondary" id="btn-new-pin">&#8635; New PIN</button>
+          <button class="btn small secondary" id="btn-sound">&#128266; Sound On</button>
         </div>
         <div class="link-label">Player Link</div>
         <div class="link-row">
@@ -506,6 +507,7 @@
       <div class="progress-grid" id="progress-grid"></div>
       <div class="end-round-row">
         <button class="btn small secondary" id="btn-end-round">End Round Now &amp; Reveal</button>
+        <button class="btn small secondary" id="btn-sound-q">&#128266; Sound On</button>
         <button class="btn small secondary" id="btn-end-game-q">Exit Game</button>
       </div>
     </div>
@@ -565,8 +567,7 @@
 (function(){
   "use strict";
 
-  var CAT_LABEL = {MATHS:"Maths",POLITICS:"Politics",SPORTS:"Sports",SCIENCE:"Science",HISTORY:"History",GK:"General Knowledge"};
-  var CAT_VAR = {MATHS:"--cat-maths",POLITICS:"--cat-politics",SPORTS:"--cat-sports",SCIENCE:"--cat-science",HISTORY:"--cat-history",GK:"--cat-gk"};
+  var CAT_LABEL = {LOGIC:"Logical Sequence",MATHS:"Maths",POLITICS:"Politics",SPORTS:"Sports",SCIENCE:"Science",HISTORY:"History",GK:"General Knowledge"};
 
   var socket = io();
   var role = sessionStorage.getItem('ffRole') || null;   // 'host' | 'player', restored across a same-tab reload
@@ -643,6 +644,70 @@
     toast._h = setTimeout(function(){ t.classList.remove('show'); }, 2400);
   }
   function fmtTime(ms){ return (ms/1000).toFixed(1) + 's'; }
+
+  /* ---------------- timer sound ----------------
+     Tones are synthesised in the browser rather than loaded from an audio file,
+     so there is nothing to host and nothing that can fail to download on the
+     night. A steady low tick each second, a brighter urgent tick for the last
+     five, and a two-note chime when time is up. Host screen only — a hall full
+     of phones ticking out of sync would be noise. */
+  var audioCtx = null;
+  var soundOn = sessionStorage.getItem('ffSound') !== 'off';
+
+  function ensureAudio(){
+    try {
+      if (!audioCtx){
+        var AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return null;
+        audioCtx = new AC();
+      }
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      return audioCtx;
+    } catch(e){ return null; }
+  }
+  // browsers only allow audio after a real interaction, so unlock on any tap
+  document.addEventListener('click', function(){ ensureAudio(); }, true);
+  document.addEventListener('keydown', function(){ ensureAudio(); }, true);
+
+  function tone(freq, durMs, vol, type){
+    if (!soundOn) return;
+    var ctx = ensureAudio();
+    if (!ctx) return;
+    try {
+      var osc = ctx.createOscillator(), gain = ctx.createGain();
+      osc.type = type || 'triangle';
+      osc.frequency.value = freq;
+      var t0 = ctx.currentTime, dur = durMs / 1000;
+      gain.gain.setValueAtTime(0.0001, t0);
+      gain.gain.linearRampToValueAtTime(vol, t0 + 0.012);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(t0); osc.stop(t0 + dur + 0.03);
+    } catch(e){}
+  }
+  function playTick(secsLeft){
+    if (role !== 'host') return;
+    if (secsLeft <= 5) tone(1150, 150, 0.45, 'square');   // urgent
+    else tone(620, 90, 0.32, 'triangle');                  // sober clock tick
+  }
+  function playTimeUp(){
+    if (role !== 'host') return;
+    tone(540, 300, 0.5, 'sawtooth');
+    setTimeout(function(){ tone(400, 460, 0.5, 'sawtooth'); }, 260);
+  }
+  function updateSoundButtons(){
+    var label = soundOn ? '🔊 Sound On' : '🔇 Sound Off';
+    ['btn-sound','btn-sound-q'].forEach(function(id){
+      var el = $(id);
+      if (el) el.textContent = label;
+    });
+  }
+  function toggleSound(){
+    soundOn = !soundOn;
+    sessionStorage.setItem('ffSound', soundOn ? 'on' : 'off');
+    updateSoundButtons();
+    if (soundOn) tone(880, 140, 0.4, 'triangle');
+  }
 
   /* Header lines must never wrap — measure each one and shrink it until it fits
      the available width on a single line. Re-run on resize and once webfonts land,
@@ -721,6 +786,9 @@
     if (input) input.value = location.origin + location.pathname;
   }
   $('btn-new-pin').addEventListener('click', function(){ socket.emit('host:newPin'); });
+  $('btn-sound').addEventListener('click', toggleSound);
+  $('btn-sound-q').addEventListener('click', toggleSound);
+  updateSoundButtons();
 
   function selectLinkText(){
     var input = $('game-link');
@@ -979,8 +1047,10 @@
 
   $('btn-end-round').addEventListener('click', function(){ socket.emit('host:endRoundNow'); });
 
+  var lastTickSecond = -1;
   function startTimerDisplay(startedAt, roundMs){
     clearInterval(timerInterval);
+    lastTickSecond = -1;
     function tick(){
       var elapsed = Date.now() - startedAt;
       var remain = Math.max(0, roundMs - elapsed);
@@ -990,6 +1060,13 @@
       $('timer-fill').setAttribute('stroke-dasharray', CIRC.toFixed(1));
       $('timer-fill').setAttribute('stroke-dashoffset', (CIRC * (1 - frac)).toFixed(1));
       $('timer-fill').style.stroke = remain <= 5000 ? 'var(--danger)' : 'var(--gold)';
+
+      // one sound per whole second, never repeated for the same second
+      if (secs !== lastTickSecond){
+        lastTickSecond = secs;
+        if (secs > 0) playTick(secs);
+        else playTimeUp();
+      }
       if (remain <= 0) clearInterval(timerInterval);
     }
     tick();
