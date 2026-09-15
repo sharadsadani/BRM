@@ -19,16 +19,18 @@ const ROUND_MS = 20000;   // seconds allowed per question
 const QUESTIONS = [
   {n:1,cat:"LOGIC",prompt:"Arrange the following medical stages in a logical chronological sequence.",dir:"FIRST → LAST",opts:{A:"Diagnosis",B:"Illness",C:"Doctor Consultation",D:"Treatment"},ans:"BCAD",explain:[["B","Illness"],["C","Doctor Consultation"],["A","Diagnosis"],["D","Treatment"]]},
   {n:2,cat:"LOGIC",prompt:"Arrange the life cycle stages of a frog in a logical order.",dir:"FIRST → LAST",opts:{A:"Tadpole",B:"Adult Frog",C:"Egg",D:"Froglet"},ans:"CADB",explain:[["C","Egg"],["A","Tadpole"],["D","Froglet"],["B","Adult Frog"]]},
-  {n:3,cat:"LOGIC",prompt:"Arrange the following geographical locations by area in ascending order.",dir:"SMALLEST → LARGEST",opts:{A:"Village",B:"State",C:"3 Tier City",D:"District"},ans:"ACDB",explain:[["A","Village"],["C","3 Tier City"],["D","District"],["B","State"]]},
+  {n:3,cat:"LOGIC",prompt:"Arrange the following geographical locations by area in a logical ascending order.",dir:"SMALLEST → LARGEST",opts:{A:"Village",B:"State",C:"3 Tier City",D:"District"},ans:"ACDB",explain:[["A","Village"],["C","3 Tier City"],["D","District"],["B","State"]]},
   {n:4,cat:"LOGIC",prompt:"Arrange in sequence the right life cycle of a person.",dir:"FIRST → LAST",opts:{A:"College",B:"Child",C:"School",D:"Employment"},ans:"BCAD",explain:[["B","Child"],["C","School"],["A","College"],["D","Employment"]]},
-  {n:5,cat:"LOGIC",prompt:"Arrange the below categories in the logical sequence.",dir:"FIRST → LAST",opts:{A:"Yarn",B:"Plant",C:"Saree",D:"Cotton"},ans:"BADC",explain:[["B","Plant"],["A","Yarn"],["D","Cotton"],["C","Saree"]]},
+  {n:5,cat:"LOGIC",prompt:"Arrange the below categories in the logical sequence.",dir:"FIRST → LAST",opts:{A:"Yarn",B:"Plant",C:"Saree",D:"Cotton"},ans:"BDAC",explain:[["B","Plant"],["D","Cotton"],["A","Yarn"],["C","Saree"]]},
   {n:6,cat:"LOGIC",prompt:"Arrange the following in the logical sequence.",dir:"FIRST → LAST",opts:{A:"Curd",B:"Butter",C:"Milk",D:"Cow"},ans:"DCAB",explain:[["D","Cow"],["C","Milk"],["A","Curd"],["B","Butter"]]},
-  {n:7,cat:"LOGIC",prompt:"Arrange the following corporate roles from lowest to highest.",dir:"LOWEST → HIGHEST",opts:{A:"Manager",B:"CEO",C:"Head of Department",D:"Chairman of Board"},ans:"ACBD",explain:[["A","Manager"],["C","Head of Department"],["B","CEO"],["D","Chairman of Board"]]},
+  {n:7,cat:"LOGIC",prompt:"Arrange the following corporate roles as per their order from lowest to highest.",dir:"LOWEST → HIGHEST",opts:{A:"Manager",B:"CEO",C:"Head of Department",D:"Chairman of Board"},ans:"ACBD",explain:[["A","Manager"],["C","Head of Department"],["B","CEO"],["D","Chairman of Board"]]},
   {n:8,cat:"LOGIC",prompt:"Arrange the following in natural progression.",dir:"FIRST → LAST",opts:{A:"Plant",B:"Seed",C:"Fruit",D:"Flower"},ans:"BADC",explain:[["B","Seed"],["A","Plant"],["D","Flower"],["C","Fruit"]]},
   {n:9,cat:"LOGIC",prompt:"Arrange the following daily activities in order.",dir:"FIRST → LAST",opts:{A:"Brush Teeth",B:"Wake Up",C:"Sleep",D:"Office / School"},ans:"BADC",explain:[["B","Wake Up"],["A","Brush Teeth"],["D","Office / School"],["C","Sleep"]]},
   {n:10,cat:"LOGIC",prompt:"Arrange the following distances from smallest to longest.",dir:"SMALLEST → LONGEST",opts:{A:"Centimeter",B:"Meter",C:"Kilometer",D:"Millimeter"},ans:"DABC",explain:[["D","Millimeter"],["A","Centimeter"],["B","Meter"],["C","Kilometer"]]},
-  {n:11,cat:"LOGIC",prompt:"Arrange the days of the Diwali festival from last to first.",dir:"LAST → FIRST",opts:{A:"Govardhan Puja",B:"Lakshmi Puja",C:"Dhanteras",D:"Choti Diwali"},ans:"ABDC",explain:[["A","Govardhan Puja"],["B","Lakshmi Puja"],["D","Choti Diwali"],["C","Dhanteras"]]},
-  {n:12,cat:"LOGIC",prompt:"Arrange the following qualifications in ascending order.",dir:"LOWEST → HIGHEST",opts:{A:"Senior Secondary",B:"Matriculation",C:"Bachelor Degree",D:"PhD"},ans:"BACD",explain:[["B","Matriculation"],["A","Senior Secondary"],["C","Bachelor Degree"],["D","PhD"]]}
+  {n:11,cat:"LOGIC",prompt:"Arrange the days from last to first on the Diwali occasion.",dir:"LAST → FIRST",opts:{A:"Govardhan Puja",B:"Lakshmi Puja",C:"Dhanteras",D:"Choti Diwali"},ans:"ABDC",explain:[["A","Govardhan Puja"],["B","Lakshmi Puja"],["D","Choti Diwali"],["C","Dhanteras"]]},
+  {n:12,cat:"LOGIC",prompt:"Arrange the following in ascending order.",dir:"LOWEST → HIGHEST",opts:{A:"Senior Secondary",B:"Matriculation",C:"Bachelor Degree",D:"PhD"},ans:"BACD",explain:[["B","Matriculation"],["A","Senior Secondary"],["C","Bachelor Degree"],["D","PhD"]]},
+  {n:13,cat:"LOGIC",prompt:"Arrange the following from before to end when you travel by flight.",dir:"FIRST → LAST",opts:{A:"Take Off",B:"Landing",C:"Web Check In",D:"Security Check"},ans:"CDAB",explain:[["C","Web Check In"],["D","Security Check"],["A","Take Off"],["B","Landing"]]},
+  {n:14,cat:"LOGIC",prompt:"Arrange the below as per the food chain model.",dir:"FIRST → LAST",opts:{A:"Frog",B:"Grasshopper",C:"Snake",D:"Grass"},ans:"DBAC",explain:[["D","Grass"],["B","Grasshopper"],["A","Frog"],["C","Snake"]]}
 ];
 
 /* ---------------- single in-memory game ---------------- */
@@ -270,4 +272,4 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log('Fastest Finger First listening on port ' + PORT));  
+server.listen(PORT, () => console.log('Fastest Finger First listening on port ' + PORT));
