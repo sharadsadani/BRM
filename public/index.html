@@ -403,6 +403,11 @@
   .modal-card{ background:var(--bg-2); border:1px solid var(--border); border-radius:20px; padding:26px; max-width:360px; text-align:center; }
   .modal-card p{ color:var(--text-1); margin:10px 0 20px; }
   .modal-actions{ display:flex; gap:10px; justify-content:center; }
+  .version-warning{
+    position:fixed; left:0; right:0; top:0; z-index:95; padding:10px 14px; text-align:center;
+    background:#b91c1c; color:#fff; font-weight:800; font-size:.95rem; line-height:1.35;
+    box-shadow:0 6px 18px rgba(0,0,0,.5);
+  }
   .conn-dot{ position:fixed; top:14px; right:16px; display:flex; align-items:center; gap:8px; font-size:.75rem; color:var(--text-2); font-weight:700; z-index:60; }
   .conn-dot .dot{ width:8px; height:8px; border-radius:50%; background:var(--danger); }
   .conn-dot.ok .dot{ background:var(--teal); }
@@ -415,6 +420,7 @@
 </head>
 <body>
 
+<div class="version-warning" id="version-warning" hidden></div>
 <div class="conn-dot" id="conn-dot"><span class="dot"></span><span id="conn-label">Connecting…</span></div>
 <header class="topbar">
   <img class="brand-logo" src="logo.png" alt="Sri Balaji Rajasthani Mandal, Ameerpet" onerror="this.style.display='none';">
@@ -794,6 +800,20 @@
   window.addEventListener('orientationchange', function(){ setTimeout(fitHeaderLines, 200); });
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(function(){ fitHeaderLines(); fitToScreen(); });
   setTimeout(function(){ fitHeaderLines(); fitToScreen(); }, 600);
+
+  /* If only one of server.js / index.html was uploaded, the game breaks in ways
+     that are hard to spot (the board never opens, buttons do nothing). Say so
+     loudly instead of failing silently. */
+  var CLIENT_VERSION = 'board-1';
+  socket.on('server:version', function(v){
+    if (v === CLIENT_VERSION) return;
+    var bar = document.getElementById('version-warning');
+    if (!bar) return;
+    bar.innerHTML = '&#9888;&nbsp; Files out of sync: this page is <b>' + esc(CLIENT_VERSION) +
+      '</b> but the server is <b>' + esc(String(v || 'older')) +
+      '</b>. Upload the matching server.js and public/index.html, then redeploy.';
+    bar.hidden = false;
+  });
 
   /* connection indicator */
   socket.on('connect', function(){ $('conn-dot').classList.add('ok'); $('conn-label').textContent = 'Live'; });
