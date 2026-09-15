@@ -14,6 +14,11 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 const ROUND_MS = 20000;   // seconds allowed per question
 
+/* Bumped whenever server.js and index.html must be deployed together. The page
+   compares this against its own copy and warns on screen if only one was
+   updated — otherwise a half-updated deploy fails silently and confusingly. */
+const APP_VERSION = 'board-1';
+
 /* ---------------- question bank (Logical Sequence set) ----------------
    Options are A-D; `ans` is the correct order as a string of those letters. */
 const QUESTIONS = [
@@ -48,6 +53,7 @@ function freshGame(){
     players: [],           // {id: token, team, name, active, socketId}
     started: false,
     qIndex: -1,
+    used: [],               // indexes of questions already played
     answers: {},            // token -> {order:[], submitted, submitTime}
     questionStart: 0,
     roundActive: false,
@@ -56,7 +62,8 @@ function freshGame(){
     lastQuestionPayload: null,
     lastResultsPayload: null,
     lastFinalPayload: null,
-    phase: 'lobby'           // lobby | question | results | final
+    lastBoardPayload: null,
+    phase: 'lobby'           // lobby | board | question | results | final
   };
 }
 
@@ -70,6 +77,7 @@ function lobbySnapshot(){
 
 function snapshotForNewConnection(){
   if (!game) return { phase: 'no-game' };
+  if (game.phase === 'board') return { phase: 'board', payload: game.lastBoardPayload, pin: game.pin, gameId: game.id, players: publicPlayers() };
   if (game.phase === 'question') return { phase: 'question', payload: game.lastQuestionPayload, pin: game.pin, gameId: game.id, players: publicPlayers() };
   if (game.phase === 'results') return { phase: 'results', payload: game.lastResultsPayload, pin: game.pin, gameId: game.id, players: publicPlayers() };
   if (game.phase === 'final') return { phase: 'final', payload: game.lastFinalPayload, pin: game.pin, gameId: game.id, players: publicPlayers() };
@@ -101,11 +109,30 @@ function endGame(){
   io.emit('game:final', payload);
 }
 
-function nextQuestion(){
+/* The host drives the game from a board of numbered questions, choosing which
+   one to play next rather than marching through them in order. */
+function boardSnapshot(){
+  return { total: QUESTIONS.length, used: game.used.slice() };
+}
+
+function showBoard(){
   if (!game) return;
   clearTimeout(game.roundTimer);
-  game.qIndex++;
-  if (game.qIndex >= QUESTIONS.length || game.players.length === 0){ endGame(); return; }
+  game.roundActive = false;
+  game.phase = 'board';
+  game.lastBoardPayload = boardSnapshot();
+  io.emit('game:board', game.lastBoardPayload);
+}
+
+function startQuestion(idx){
+  if (!game) return;
+  idx = Number(idx);
+  if (!(idx >= 0 && idx < QUESTIONS.length)) return;
+  if (game.used.indexOf(idx) > -1) return;        // already played
+  if (game.players.length === 0) return;
+  clearTimeout(game.roundTimer);
+  game.qIndex = idx;
+  game.used.push(idx);
 
   // Round winners step aside so others get a turn. With a small group that pool
   // empties fast, so once fewer than two people are still in contention everyone
@@ -122,7 +149,7 @@ function nextQuestion(){
   game.roundActive = true;
   game.phase = 'question';
   const payload = {
-    q: freshQuestionForClient(game.qIndex), qNum: game.qIndex + 1, total: QUESTIONS.length,
+    q: freshQuestionForClient(idx), qNum: idx + 1, total: QUESTIONS.length,
     activeCount: remaining, startedAt: game.questionStart, roundMs: ROUND_MS, everyoneBack: everyoneBack
   };
   game.lastQuestionPayload = payload;
@@ -172,13 +199,14 @@ function endRound(){
   const payload = {
     results, winner, qNum: q.n, total: QUESTIONS.length,
     correctSeq: q.ans, explain: q.explain,
-    isLastRound: (game.qIndex + 1 >= QUESTIONS.length)
+    isLastRound: (game.used.length >= QUESTIONS.length)
   };
   game.lastResultsPayload = payload;
   io.emit('round:results', payload);
 }
 
 io.on('connection', (socket) => {
+  socket.emit('server:version', APP_VERSION);
   socket.emit('game:snapshot', snapshotForNewConnection());
 
   socket.on('host:generatePin', () => {
@@ -236,11 +264,14 @@ io.on('connection', (socket) => {
     if (!game || !game.players.length || game.started) return;
     game.started = true;
     game.qIndex = -1;
+    game.used = [];
     io.emit('game:started');
-    nextQuestion();
+    showBoard();                       // host picks the first question off the board
   });
 
-  socket.on('host:nextQuestion', () => { nextQuestion(); });
+  socket.on('host:pickQuestion', (idx) => { startQuestion(idx); });
+  socket.on('host:showBoard', () => { showBoard(); });
+  socket.on('host:nextQuestion', () => { showBoard(); });   // older clients
   socket.on('host:endRoundNow', () => { endRound(); });
   socket.on('host:endGame', () => { endGame(); });
 
