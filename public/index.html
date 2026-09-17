@@ -18,6 +18,7 @@
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
+  html{ overflow-x:hidden; max-width:100%; }
   /* a CSS display rule beats the plain `hidden` attribute, which silently exposed
      host-only controls to players — this makes hidden actually mean hidden */
   [hidden]{ display:none !important; }
@@ -82,7 +83,7 @@
     font-size:clamp(.72rem,1.1vw,.95rem); letter-spacing:.14em; text-transform:uppercase;
   }
   .credits-names{
-    margin:0; text-align:center; white-space:nowrap; overflow-x:auto; padding-bottom:2px;
+    margin:0; text-align:center; white-space:nowrap; overflow:hidden; padding-bottom:2px;
     color:#ffffff; font-weight:800; font-size:clamp(.95rem,1.5vw,1.4rem);
   }
   .credits-names .star{ color:var(--gold); margin:0 10px; }
@@ -100,12 +101,16 @@
     .brand-logo{ left:8px; top:6px; width:94px; }
     .lights{ gap:13px; padding-top:6px; }
     .lights span{ width:7px; height:7px; }
-    .eyebrow{ margin-top:3px; letter-spacing:0; }
-    .tagline{ margin-top:7px; }
+    /* a 44-character line cannot fit beside the logo on a phone: rather than
+       shrink it to an unreadable sliver, let it wrap onto two readable lines */
+    .eyebrow{ margin-top:2px; letter-spacing:.01em; white-space:normal; font-size:17px; line-height:1.14; }
+    .tagline{ margin-top:5px; white-space:normal; font-size:16px; line-height:1.14; }
     .credits{ padding:6px 8px 8px; }
     .credits-title{ font-size:.6rem; margin-bottom:3px; letter-spacing:.1em; }
-    .credits-names{ font-size:.82rem; }
-    .credits-names .star{ margin:0 7px; }
+    /* on a phone six names cannot sit on one readable line, so let them wrap
+       onto two centred lines rather than shrink to nothing or scroll sideways */
+    .credits-names{ font-size:.68rem; white-space:normal; line-height:1.25; }
+    .credits-names .star{ margin:0 5px; }
     body{ padding-bottom:66px; }
     #app{ padding:4px 14px 16px; }
     .q-topbar{ margin-top:4px; }
@@ -177,9 +182,25 @@
   }
   .pin-actions{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
   .link-label{ margin-top:22px; font-size:.72rem; letter-spacing:.14em; text-transform:uppercase; color:var(--text-2); font-weight:800; }
-  .link-row{ display:flex; gap:8px; margin-top:10px; }
-  .link-row input{ flex:1; min-width:0; background:rgba(255,255,255,0.06); border:1.5px solid var(--border); color:var(--text-0); border-radius:12px; padding:12px 14px; font-size:.85rem; font-weight:600; font-family:'Manrope',sans-serif; }
-  .link-row input:focus{ border-color:var(--gold); }
+  /* the player link is the single most important thing on the host screen, so it
+     gets a full-width row of its own and is shrunk by JS to exactly one line */
+  /* the player link is the single most important thing on the host screen, so it
+     gets the full width of the page and is grown by JS to the biggest size that
+     still keeps it on one line (it wraps instead of shrinking on a phone) */
+  .link-panel{ margin-top:18px; padding:20px 22px 22px; text-align:center; }
+  .link-row{ display:block; margin-top:10px; }
+  .link-row textarea{
+    display:block; width:100%; min-width:0; text-align:center; resize:none; overflow:hidden;
+    white-space:pre; word-break:normal;
+    background:rgba(52,211,153,0.10); border:2.5px solid var(--teal); color:#ffffff;
+    border-radius:16px; padding:14px 10px;
+    font-size:34px; font-weight:800; letter-spacing:.005em; line-height:1.2;
+    font-family:'Baloo 2','Manrope',sans-serif;
+    text-shadow:0 2px 14px rgba(0,0,0,.5);
+    box-shadow:0 0 26px -8px rgba(52,211,153,.55), inset 0 0 14px rgba(255,255,255,.04);
+  }
+  .link-row textarea:focus{ border-color:var(--gold); }
+  .link-actions{ display:flex; justify-content:center; margin-top:12px; }
   .copy-note{ margin-top:10px; color:var(--text-2); font-size:.78rem; }
   .toast{
     position:fixed; left:50%; bottom:28px; transform:translate(-50%,10px); background:var(--teal); color:#062b20; font-weight:800; padding:12px 22px;
@@ -208,13 +229,49 @@
   .roster{ margin-top:22px; }
   .roster h3{ font-size:.95rem; color:var(--text-1); margin-bottom:10px; }
   .roster-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px; }
-  .roster-empty{ color:var(--text-2); font-size:.88rem; font-style:italic; padding:14px 0; }
+  .roster-empty{ grid-column:1/-1; color:var(--text-2); font-size:.88rem; font-style:italic; padding:14px 0; }
   .roster-card{ background:var(--panel-strong); border:1px solid var(--border); border-radius:14px; padding:12px 14px; position:relative; }
   .roster-card .team{ font-size:.85rem; font-weight:800; letter-spacing:.08em; color:var(--gold); text-transform:uppercase; }
   .roster-card .name{ font-weight:800; font-size:1.35rem; color:#ffffff; margin-top:3px; }
   .roster-card .rm{ position:absolute; top:6px; right:8px; background:none; border:none; color:var(--text-2); cursor:pointer; font-size:1rem; line-height:1; padding:2px; }
   .roster-card .rm:hover{ color:var(--danger); }
   .start-row{ margin-top:24px; }
+
+  /* ---- HOST LOBBY: everything one notch (+15%) larger and easier to read ---- */
+  #screen-host-lobby .pin-label{ font-size:1.02rem; letter-spacing:.18em; }
+  #screen-host-lobby .link-label{ font-size:.95rem; letter-spacing:.16em; }
+  #screen-host-lobby .join-card h2{ font-size:1.72rem; }
+  #screen-host-lobby .join-card .hint{ font-size:1.05rem; }
+  #screen-host-lobby .roster-empty{ font-size:1.05rem; }
+  #screen-host-lobby .roster-card .team{ font-size:1rem; }
+  #screen-host-lobby .roster-card .name{ font-size:1.58rem; }
+  #screen-host-lobby .btn{ font-size:1.22rem; padding:18px 34px; }
+  #screen-host-lobby .btn.small{ font-size:1.02rem; padding:12px 22px; }
+  #screen-host-lobby .roster-grid{ grid-template-columns:repeat(auto-fill,minmax(168px,1fr)); }
+
+  /* ---- phones: nothing may run off the side, and the boxes stay inside the width ---- */
+  @media (max-width:700px){
+    .lobby-grid{ gap:14px; margin-top:10px; }
+    .pin-card{ padding:20px 14px; }
+    .join-card{ padding:16px 14px; }
+    .pin-digits{ gap:9px; margin:13px 0 16px; }
+    .pin-digit{ width:clamp(52px,17vw,104px); height:clamp(66px,21vw,128px); font-size:clamp(2rem,10vw,4.8rem); border-radius:13px; }
+    .roster{ margin-top:14px; }
+    .roster-grid{ grid-template-columns:repeat(auto-fill,minmax(132px,1fr)); gap:8px; }
+    .start-row{ margin-top:14px; }
+    #screen-host-lobby .roster-grid{ grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); }
+    #screen-host-lobby .btn{ font-size:1.1rem; padding:15px 24px; }
+    #screen-host-lobby .join-card h2{ font-size:1.42rem; }
+    #screen-host-lobby .roster-card .name{ font-size:1.32rem; }
+    .field-row{ gap:9px; }
+    .link-panel{ margin-top:12px; padding:14px 12px 16px; }
+    .link-row textarea{ white-space:pre-wrap; word-break:normal; overflow-wrap:break-word; font-size:22px; padding:11px 8px; line-height:1.25; }
+  }
+  @media (max-width:380px){
+    #app{ padding:4px 9px 14px; }
+    .pin-digits{ gap:7px; }
+    .pin-digit{ width:clamp(46px,17vw,104px); }
+  }
   .waiting-note{ text-align:center; color:var(--text-1); font-weight:700; margin-top:26px; font-size:1.05rem; }
   .pulse-dot{ display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--teal); margin-right:8px; animation:pulse 1.4s ease-in-out infinite; }
   @keyframes pulse{ 0%,100%{opacity:.4;} 50%{opacity:1;} }
@@ -476,11 +533,6 @@
           <button class="btn small secondary" id="btn-new-pin">&#8635; New PIN</button>
           <button class="btn small secondary" id="btn-sound">&#128266; Sound On</button>
         </div>
-        <div class="link-label">Player Link</div>
-        <div class="link-row">
-          <input type="text" id="game-link" readonly aria-label="Player link — tap to select, then copy">
-          <button class="btn small" id="btn-copy-link">Copy</button>
-        </div>
       </div>
 
       <div class="panel join-card">
@@ -491,6 +543,17 @@
         </div>
       </div>
     </div>
+
+    <div class="panel link-panel">
+      <div class="link-label">Player Link &mdash; send this to every player</div>
+      <div class="link-row">
+        <textarea id="game-link" readonly rows="1" aria-label="Player link — tap to select, then copy"></textarea>
+      </div>
+      <div class="link-actions">
+        <button class="btn small" id="btn-copy-link">&#128203; Copy Link</button>
+      </div>
+    </div>
+
     <div class="start-row">
       <button class="btn wide magenta" id="btn-start-game" disabled>Start Game</button>
     </div>
@@ -673,6 +736,10 @@
     var credits = document.querySelector('.credits');
     var reserve = (credits ? credits.offsetHeight : 60) + 12;
     document.body.style.paddingBottom = reserve + 'px';
+    // on phones the Live badge sits just above the organisers strip, whose height
+    // changes with how the names wrap — so park it off the measured height
+    var cd = document.getElementById('conn-dot');
+    if (cd) cd.style.bottom = (window.innerWidth <= 700) ? (reserve + 4) + 'px' : '';
     var top = app.getBoundingClientRect().top;
     var avail = window.innerHeight - top - reserve;
     var natural = app.offsetHeight;
@@ -781,6 +848,8 @@
     [['eyebrow', 56, 9], ['tagline', 50, 9]].forEach(function(cfg){
       var el = document.querySelector('.' + cfg[0]);
       if (!el) return;
+      // on phones these are allowed to wrap — leave the CSS size alone
+      if (window.getComputedStyle(el).whiteSpace !== 'nowrap'){ el.style.fontSize = ''; return; }
       var maxPx = cfg[1], minPx = cfg[2];
       el.style.fontSize = maxPx + 'px';
       var avail = el.clientWidth;
@@ -791,15 +860,52 @@
       }
     });
   }
+  /* the player link and the organisers strip are both single lines that must not
+     wrap and must not scroll sideways — shrink them to the width they've got */
+  function fitOneLine(el, maxPx, minPx){
+    if (!el) return;
+    el.style.fontSize = maxPx + 'px';
+    var avail = el.clientWidth;
+    var needed = el.scrollWidth;
+    if (avail > 0 && needed > avail){
+      el.style.fontSize = Math.max(minPx, Math.floor(maxPx * (avail / needed) * 0.97)) + 'px';
+    }
+  }
+  function fitLink(){
+    var el = document.getElementById('game-link');
+    if (!el || !el.value) return;
+    var wraps = window.getComputedStyle(el).whiteSpace !== 'pre';
+    if (wraps){
+      el.style.fontSize = '';                       // phone: CSS size, wrapped
+    } else {
+      el.style.fontSize = '46px';                   // desktop: as big as one line allows
+      el.style.height = 'auto';
+      var avail = el.clientWidth, needed = el.scrollWidth;
+      if (avail > 0 && needed > avail){
+        el.style.fontSize = Math.max(13, Math.floor(46 * (avail / needed) * 0.97)) + 'px';
+      }
+    }
+    el.style.height = 'auto';
+    el.style.height = (el.scrollHeight + 2) + 'px';
+  }
+  function fitCredits(){
+    var el = document.querySelector('.credits-names');
+    if (!el) return;
+    el.style.fontSize = '';
+    var cs = window.getComputedStyle(el);
+    if (cs.whiteSpace !== 'nowrap') return;   // phones let it wrap instead
+    fitOneLine(el, parseFloat(cs.fontSize) || 16, 11);
+  }
   fitHeaderLines();
+  fitCredits();
   var fitTimer = null;
   window.addEventListener('resize', function(){
     clearTimeout(fitTimer);
-    fitTimer = setTimeout(fitHeaderLines, 120);
+    fitTimer = setTimeout(function(){ fitHeaderLines(); fitCredits(); fitLink(); }, 120);
   });
-  window.addEventListener('orientationchange', function(){ setTimeout(fitHeaderLines, 200); });
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function(){ fitHeaderLines(); fitToScreen(); });
-  setTimeout(function(){ fitHeaderLines(); fitToScreen(); }, 600);
+  window.addEventListener('orientationchange', function(){ setTimeout(function(){ fitHeaderLines(); fitCredits(); fitLink(); }, 200); });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function(){ fitHeaderLines(); fitCredits(); fitLink(); fitToScreen(); });
+  setTimeout(function(){ fitHeaderLines(); fitCredits(); fitLink(); fitToScreen(); }, 600);
 
   /* If only one of server.js / index.html was uploaded, the game breaks in ways
      that are hard to spot (the board never opens, buttons do nothing). Say so
@@ -862,7 +968,10 @@
   }
   function renderLink(){
     var input = $('game-link');
-    if (input) input.value = location.origin + location.pathname;
+    if (!input) return;
+    input.value = location.origin + location.pathname;
+    fitLink();
+    setTimeout(fitLink, 60);
   }
   $('btn-new-pin').addEventListener('click', function(){ socket.emit('host:newPin'); });
   $('btn-sound').addEventListener('click', toggleSound);
