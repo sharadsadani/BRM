@@ -17,7 +17,7 @@ const ROUND_MS = 20000;   // seconds allowed per question
 /* Bumped whenever server.js and index.html must be deployed together. The page
    compares this against its own copy and warns on screen if only one was
    updated — otherwise a half-updated deploy fails silently and confusingly. */
-const APP_VERSION = 'board-1';
+const APP_VERSION = 'elim-1';
 
 /* ---------------- question bank (Logical Sequence set) ----------------
    Options are A-D; `ans` is the correct order as a string of those letters. */
@@ -112,7 +112,20 @@ function endGame(){
 /* The host drives the game from a board of numbered questions, choosing which
    one to play next rather than marching through them in order. */
 function boardSnapshot(){
-  return { total: QUESTIONS.length, used: game.used.slice() };
+  return {
+    total: QUESTIONS.length,
+    used: game.used.slice(),
+    players: publicPlayers(),
+    activeCount: game.players.filter(p => p.active).length
+  };
+}
+
+/* Any change to who is in play has to reach the host's board and every phone,
+   whatever screen they happen to be on. */
+function pushPlayers(){
+  if (!game) return;
+  if (game.phase === 'board') game.lastBoardPayload = boardSnapshot();
+  io.emit('game:players', { players: publicPlayers(), activeCount: game.players.filter(p => p.active).length });
 }
 
 function showBoard(){
@@ -130,18 +143,15 @@ function startQuestion(idx){
   if (!(idx >= 0 && idx < QUESTIONS.length)) return;
   if (game.used.indexOf(idx) > -1) return;        // already played
   if (game.players.length === 0) return;
+  // Every round winner steps out, so eventually the field empties. Say so plainly
+  // rather than starting a question nobody can answer.
+  if (game.players.filter(p => p.active).length === 0){
+    io.emit('game:notice', 'Every team has won a round and stepped aside — exit to the winners list, or bring teams back in.');
+    return;
+  }
   clearTimeout(game.roundTimer);
   game.qIndex = idx;
   game.used.push(idx);
-
-  // Round winners step aside so others get a turn. With a small group that pool
-  // empties fast, so once fewer than two people are still in contention everyone
-  // comes back in and the game keeps going — it never dead-ends mid-event.
-  let everyoneBack = false;
-  if (game.players.filter(p => p.active).length < 2 && game.players.some(p => !p.active)){
-    game.players.forEach(p => { p.active = true; });
-    everyoneBack = true;
-  }
 
   const remaining = game.players.filter(p => p.active).length;
   game.answers = {};
@@ -150,7 +160,9 @@ function startQuestion(idx){
   game.phase = 'question';
   const payload = {
     q: freshQuestionForClient(idx), qNum: idx + 1, total: QUESTIONS.length,
-    activeCount: remaining, startedAt: game.questionStart, roundMs: ROUND_MS, everyoneBack: everyoneBack
+    activeCount: remaining, startedAt: game.questionStart, roundMs: ROUND_MS,
+    activeIds: game.players.filter(p => p.active).map(p => p.id),
+    players: publicPlayers()
   };
   game.lastQuestionPayload = payload;
   io.emit('question:show', payload);
@@ -199,7 +211,9 @@ function endRound(){
   const payload = {
     results, winner, qNum: q.n, total: QUESTIONS.length,
     correctSeq: q.ans, explain: q.explain,
-    isLastRound: (game.used.length >= QUESTIONS.length)
+    isLastRound: (game.used.length >= QUESTIONS.length),
+    remainingActive: game.players.filter(p => p.active).length,
+    players: publicPlayers()
   };
   game.lastResultsPayload = payload;
   io.emit('round:results', payload);
@@ -226,7 +240,26 @@ io.on('connection', (socket) => {
     game.players = game.players.filter(p => p.id !== playerId);
     delete game.answers[playerId];
     if (game.phase === 'lobby') broadcastLobby();
-    else maybeAutoEnd();
+    else { pushPlayers(); maybeAutoEnd(); }
+  });
+
+  /* The host can stand a team down, or bring a round winner back in, at any
+     point — the automatic rule is just the default, not a cage. */
+  socket.on('host:setActive', ({ playerId, active } = {}) => {
+    if (!game) return;
+    const p = game.players.find(pl => pl.id === playerId);
+    if (!p) return;
+    p.active = !!active;
+    if (!p.active) delete game.answers[p.id];
+    if (game.phase === 'lobby') broadcastLobby();
+    else { pushPlayers(); maybeAutoEnd(); }
+  });
+
+  socket.on('host:reinstateAll', () => {
+    if (!game) return;
+    game.players.forEach(p => { p.active = true; });
+    if (game.phase === 'lobby') broadcastLobby();
+    else pushPlayers();
   });
 
   socket.on('player:join', ({ team, name, pin, token } = {}, ack) => {
