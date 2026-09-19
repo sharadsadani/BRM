@@ -322,6 +322,39 @@
   }
   .board-actions{ display:flex; justify-content:center; margin-top:22px; }
 
+  /* host-only team manager: who is still in play, who has stepped aside, and a
+     cross to take anyone out of the game at any moment */
+  .team-bar{ margin:0 auto 12px; max-width:1240px; }
+  .team-bar-head{ display:flex; align-items:center; justify-content:center; gap:14px; flex-wrap:wrap; margin-bottom:9px; }
+  .team-bar-title{ color:var(--text-1); font-size:.98rem; font-weight:800; letter-spacing:.1em; text-transform:uppercase; }
+  .team-chips{ display:flex; flex-wrap:wrap; gap:8px; justify-content:center; }
+  .team-chip{
+    display:inline-flex; align-items:center; gap:8px; padding:7px 9px 7px 14px; border-radius:12px;
+    background:var(--panel-strong); border:1.5px solid var(--teal); color:#ffffff; font-weight:800; font-size:1.04rem;
+  }
+  .team-chip.out{ border-color:var(--border); color:var(--text-2); background:rgba(255,255,255,.04); }
+  .team-chip .who{ white-space:nowrap; }
+  .team-chip.out .who{ text-decoration:line-through; }
+  .team-chip .act{
+    border:none; cursor:pointer; border-radius:8px; width:24px; height:24px; line-height:1;
+    font-size:1rem; font-weight:900; color:#ffffff; background:rgba(255,255,255,.12);
+  }
+  .team-chip .act.kill:hover{ background:var(--danger); color:#2b0a0c; }
+  .team-chip .act.back:hover{ background:var(--teal); color:#062b20; }
+  @media (max-width:700px){
+    .team-chip{ font-size:.78rem; padding:5px 7px 5px 11px; gap:6px; }
+    .team-chip .act{ width:21px; height:21px; font-size:.9rem; }
+    .team-bar{ margin-bottom:8px; }
+  }
+
+  /* a player who has already won a round watches the rest of the game */
+  .out-note{
+    margin:18px auto 0; max-width:620px; text-align:center; padding:20px 18px; border-radius:22px;
+    background:linear-gradient(160deg, rgba(255,211,77,.16), rgba(236,72,153,.10)); border:2px solid var(--gold);
+  }
+  .out-note .out-title{ font-family:'Baloo 2',sans-serif; font-weight:800; font-size:clamp(1.3rem,3vw,2rem); color:var(--gold); }
+  .out-note .out-sub{ margin-top:6px; color:var(--text-1); font-weight:700; font-size:clamp(.95rem,1.6vw,1.15rem); }
+
   .q-topbar{ display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-top:10px; }
   .cat-badge{ padding:10px 22px; border-radius:999px; font-weight:800; font-size:clamp(1rem,1.5vw,1.35rem); color:#170c30; letter-spacing:.02em; }
   .q-count{ flex:1; text-align:center; color:var(--text-0); font-weight:800; font-size:clamp(1.05rem,1.6vw,1.5rem); }
@@ -599,6 +632,13 @@
   <!-- QUESTION BOARD -->
   <section class="screen" id="screen-board">
     <p class="board-title" id="board-title">Pick a Question</p>
+    <div class="team-bar" id="team-bar" hidden>
+      <div class="team-bar-head">
+        <span class="team-bar-title" id="team-bar-title">Teams in play</span>
+        <button class="btn small secondary" id="btn-reinstate-all">&#8635; Bring everyone back</button>
+      </div>
+      <div class="team-chips" id="team-chips"></div>
+    </div>
     <div class="board-grid" id="board-grid"></div>
     <div class="board-actions" id="board-actions" hidden>
       <button class="btn secondary" id="btn-board-exit">Exit &amp; Show Winners</button>
@@ -622,6 +662,12 @@
     <p class="q-dir" id="q-dir"></p>
     <h2 class="q-prompt" id="q-prompt"></h2>
     <div class="opt-row" id="opt-row"></div>
+
+    <!-- shown to a player who has already won a round and stepped aside -->
+    <div class="out-note" id="out-note" hidden>
+      <div class="out-title">&#127942; You&rsquo;ve already won a round</div>
+      <div class="out-sub">You&rsquo;re out for the rest of the game &mdash; sit back and cheer the others on!</div>
+    </div>
 
     <!-- player-only answer pad -->
     <div class="answer-pad" id="answer-pad" hidden>
@@ -910,7 +956,7 @@
   /* If only one of server.js / index.html was uploaded, the game breaks in ways
      that are hard to spot (the board never opens, buttons do nothing). Say so
      loudly instead of failing silently. */
-  var CLIENT_VERSION = 'board-1';
+  var CLIENT_VERSION = 'elim-1';
   socket.on('server:version', function(v){
     if (v === CLIENT_VERSION) return;
     var bar = document.getElementById('version-warning');
@@ -1121,6 +1167,7 @@
     var total = payload.total, used = payload.used || [];
     var isHost = (role === 'host');
     var allDone = used.length >= total;
+    if (payload.players) latestPlayers = payload.players;
 
     $('board-title').textContent = allDone
       ? 'All questions played'
@@ -1146,10 +1193,63 @@
     }
     $('board-actions').hidden = !isHost;
     $('board-waiting').hidden = isHost;
+    if (!isHost){
+      $('board-waiting').innerHTML = amIOut()
+        ? '&#127942; You&rsquo;ve won a round and stepped aside &mdash; enjoy the rest of the game!'
+        : '<span class="pulse-dot"></span>Waiting for the host to pick a question&hellip;';
+    }
+    renderTeamBar();
     showScreen('screen-board');
     sizeBoard();
     setTimeout(sizeBoard, 80);
   }
+
+  /* ---- who is still in play ----
+     The team that answers correctly first steps aside for the rest of the game,
+     so the field shrinks question by question. The host can also take any team
+     out, or put one back in, at any moment from this bar. */
+  function amIOut(){
+    var me = latestPlayers.filter(function(p){ return p.id === getToken(); })[0];
+    return !!(me && me.active === false);
+  }
+  function renderTeamBar(){
+    var bar = $('team-bar');
+    if (!bar) return;
+    if (role !== 'host' || !latestPlayers.length){ bar.hidden = true; return; }
+    bar.hidden = false;
+    var inPlay = latestPlayers.filter(function(p){ return p.active; }).length;
+    var out = latestPlayers.length - inPlay;
+    $('team-bar-title').textContent = inPlay + (inPlay === 1 ? ' team in play' : ' teams in play') +
+      (out ? ' · ' + out + ' stepped aside' : '');
+    $('btn-reinstate-all').hidden = !out;
+    $('team-chips').innerHTML = latestPlayers.map(function(p){
+      var act = p.active
+        ? '<button class="act kill" data-out="' + p.id + '" title="Remove this team from the game">&times;</button>'
+        : '<button class="act back" data-in="' + p.id + '" title="Put this team back in play">&#8635;</button>';
+      return '<span class="team-chip' + (p.active ? '' : ' out') + '">' +
+               '<span class="who">Team ' + esc(p.team) + ' &middot; ' + esc(p.name) + '</span>' + act +
+             '</span>';
+    }).join('');
+    $('team-chips').querySelectorAll('[data-out]').forEach(function(b){
+      b.addEventListener('click', function(){ socket.emit('host:removePlayer', b.getAttribute('data-out')); });
+    });
+    $('team-chips').querySelectorAll('[data-in]').forEach(function(b){
+      b.addEventListener('click', function(){ socket.emit('host:setActive', { playerId: b.getAttribute('data-in'), active: true }); });
+    });
+    setTimeout(sizeBoard, 30);
+  }
+  $('btn-reinstate-all').addEventListener('click', function(){ socket.emit('host:reinstateAll'); });
+
+  // roster changed mid-game (someone removed, someone brought back)
+  socket.on('game:players', function(data){
+    latestPlayers = (data && data.players) || [];
+    if (document.querySelector('#screen-board.active')) renderTeamBar();
+    if (document.querySelector('#screen-question.active') && role === 'host'){
+      $('host-progress-title').textContent = 'In Play (' + latestPlayers.filter(function(p){ return p.active; }).length + ')';
+      renderProgress();
+    }
+  });
+  socket.on('game:notice', function(msg){ if (role === 'host') toast(String(msg || ''), true); });
 
   /* Stretch the grid into whatever vertical room is left between the title and
      the organisers strip, so the board fills the screen instead of hugging the top. */
@@ -1181,18 +1281,28 @@
     $('q-count').textContent = 'Question ' + payload.qNum + ' of ' + payload.total;
     $('q-dir').textContent = q.dir;
     $('q-prompt').textContent = q.prompt;
-    $('everyone-back').hidden = !payload.everyoneBack;
+    $('everyone-back').hidden = true;
+    if (payload.players) latestPlayers = payload.players;
 
-    if (role === 'player'){
+    var iAmIn = !payload.activeIds || payload.activeIds.indexOf(getToken()) > -1;
+    if (role === 'player' && iAmIn){
+      $('out-note').hidden = true;
       $('answer-pad').hidden = false;
       $('host-progress').hidden = true;
       renderAnswerPad();
+    } else if (role === 'player'){
+      // already won a round — options stay on screen to follow along, but locked
+      renderOptionCards(false);
+      $('out-note').hidden = false;
+      $('answer-pad').hidden = true;
+      $('host-progress').hidden = true;
     } else if (role === 'host'){
       renderOptionCards(false);
+      $('out-note').hidden = true;
       $('answer-pad').hidden = true;
       $('host-progress').hidden = false;
-      $('host-progress-title').textContent = 'In Play (' + payload.activeCount + (payload.activeCount === 1 ? ' player' : ' players') + ')';
-      renderProgress([]);
+      $('host-progress-title').textContent = 'In Play (' + payload.activeCount + (payload.activeCount === 1 ? ' team' : ' teams') + ')';
+      renderProgress();
     }
 
     startTimerDisplay(payload.startedAt, payload.roundMs);
@@ -1287,8 +1397,12 @@
     // kept simple here since the round auto-reveals once everyone's in or time is up.
     var grid = $('progress-grid');
     grid.innerHTML = latestPlayers.filter(function(p){ return p.active; }).map(function(p){
-      return '<span class="progress-chip">Team ' + esc(p.team) + ' · ' + esc(p.name) + '</span>';
+      return '<span class="team-chip"><span class="who">Team ' + esc(p.team) + ' &middot; ' + esc(p.name) + '</span>' +
+             '<button class="act kill" data-out="' + p.id + '" title="Remove this team from the game">&times;</button></span>';
     }).join('');
+    grid.querySelectorAll('[data-out]').forEach(function(b){
+      b.addEventListener('click', function(){ socket.emit('host:removePlayer', b.getAttribute('data-out')); });
+    });
   }
 
   $('btn-end-round').addEventListener('click', function(){ socket.emit('host:endRoundNow'); });
@@ -1322,8 +1436,11 @@
   /* ---------------- RESULTS ---------------- */
   socket.on('round:results', function(payload){ renderResultsScreen(payload); });
 
+  var lastResults = null;
   function renderResultsScreen(payload){
     clearInterval(timerInterval);
+    lastResults = payload;
+    if (payload.players) latestPlayers = payload.players;
     renderWinnerBanner(payload.winner);
     renderCorrectStrip(payload.explain);
     renderResultsTable(payload.results);
@@ -1347,9 +1464,11 @@
     var el = $('winner-banner');
     if (winner){
       el.className = 'winner-banner';
+      var left = (lastResults && typeof lastResults.remainingActive === 'number') ? lastResults.remainingActive : null;
       el.innerHTML = '<div class="tag">Round Winner</div>' +
         '<div class="who">&#127942; Team ' + esc(winner.team) + ' — ' + esc(winner.name) + '</div>' +
-        '<div class="time">Correct in ' + fmtTime(winner.timeMs) + '</div>';
+        '<div class="time">Correct in ' + fmtTime(winner.timeMs) + ' &middot; steps aside' +
+        (left !== null ? ' &mdash; ' + left + (left === 1 ? ' team left' : ' teams left') : '') + '</div>';
     } else {
       el.className = 'winner-banner none';
       el.innerHTML = '<div class="tag">No Winner This Round</div>' +
