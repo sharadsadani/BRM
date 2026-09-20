@@ -213,6 +213,8 @@
   .join-card h2{ font-size:1.25rem; color:var(--text-0); margin-bottom:4px; }
   .join-card .hint{ color:var(--text-2); font-size:.85rem; margin-bottom:18px; }
   .field-row{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px; }
+  /* the team names are words, not digits — each field gets the full width */
+  .field-stack{ display:grid; grid-template-columns:1fr; gap:12px; margin-bottom:12px; }
   .field{ display:flex; flex-direction:column; gap:6px; }
   .field label{ font-size:.75rem; font-weight:700; color:var(--text-2); text-transform:uppercase; letter-spacing:.08em; }
   .field input{
@@ -221,6 +223,14 @@
   }
   .field input::placeholder{ color:var(--text-2); font-weight:500; }
   .field input:focus{ border-color:var(--gold); }
+  .field select{
+    -webkit-appearance:none; appearance:none; cursor:pointer;
+    background:rgba(255,255,255,0.06) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='9' viewBox='0 0 14 9'><path d='M1 1l6 6 6-6' fill='none' stroke='%23cbb9ff' stroke-width='2.4' stroke-linecap='round'/></svg>") no-repeat right 13px center;
+    border:1.5px solid var(--border); color:var(--text-0); border-radius:12px; padding:13px 34px 13px 14px;
+    font-size:1rem; font-weight:800; font-family:'Manrope',sans-serif; width:100%;
+  }
+  .field select:focus{ border-color:var(--gold); }
+  .field select option{ background:#1a0f33; color:#ffffff; font-weight:700; }
   .pin-input{ letter-spacing:.5em; text-align:center; }
   .err-msg{ color:var(--danger); font-size:.8rem; font-weight:700; min-height:1.1em; margin-top:2px; }
   .shake{ animation:shake .35s ease; }
@@ -597,11 +607,13 @@
     <div class="lobby-grid" style="grid-template-columns:1fr; max-width:480px; margin:24px auto 0;">
       <div class="panel join-card">
         <h2>Player Check-In</h2>
-        <p class="hint">Team number, then your name, then today's PIN (ask your host).</p>
-        <div class="field-row">
+        <p class="hint">Pick your team, then your name, then today's PIN (ask your host).</p>
+        <div class="field-stack">
           <div class="field">
-            <label for="in-team">Team Number</label>
-            <input type="text" inputmode="numeric" id="in-team" placeholder="e.g. 3">
+            <label for="in-team">Team</label>
+            <select id="in-team">
+              <option value="" selected disabled>Choose your team…</option>
+            </select>
           </div>
           <div class="field">
             <label for="in-name">Player Name</label>
@@ -956,7 +968,23 @@
   /* If only one of server.js / index.html was uploaded, the game breaks in ways
      that are hard to spot (the board never opens, buttons do nothing). Say so
      loudly instead of failing silently. */
-  var CLIENT_VERSION = 'elim-1';
+  var CLIENT_VERSION = 'teams-1';
+  /* The ten team names, in the order the host set. The server sends the list on
+     connection; this copy is only a fallback if that arrives late. */
+  var TEAMS = ['Mercury','Venus','Earth','Mars','Jupiter','Saturn','Uranus','Neptune','Pluto','Apollo'];
+  function fillTeams(list){
+    if (list && list.length) TEAMS = list;
+    var sel = $('in-team');
+    if (!sel) return;
+    var chosen = sel.value;
+    sel.innerHTML = '<option value="" disabled' + (chosen ? '' : ' selected') + '>Choose your team&hellip;</option>' +
+      TEAMS.map(function(t){
+        return '<option value="' + esc(t) + '"' + (t === chosen ? ' selected' : '') + '>' + esc(t) + '</option>';
+      }).join('');
+  }
+  fillTeams();                                   // populated immediately, refreshed by the server
+  socket.on('server:teams', function(list){ fillTeams(list); });
+
   socket.on('server:version', function(v){
     if (v === CLIENT_VERSION) return;
     var bar = document.getElementById('version-warning');
@@ -1052,7 +1080,7 @@
     grid.innerHTML = players.map(function(p){
       var rm = (role === 'host') ? '<button class="rm" data-rm="' + p.id + '" aria-label="Remove ' + esc(p.name) + '">&times;</button>' : '';
       return '<div class="roster-card">' + rm +
-        '<div class="team">Team ' + esc(p.team) + '</div>' +
+        '<div class="team">' + esc(p.team) + '</div>' +
         '<div class="name">' + esc(p.name) + '</div>' +
       '</div>';
     }).join('');
@@ -1065,12 +1093,13 @@
 
   /* ---------------- PLAYER JOIN ---------------- */
   $('btn-join').addEventListener('click', function(){
-    var team = $('in-team').value.trim();
+    var team = $('in-team').value;
     var name = $('in-name').value.trim();
     var pin = $('in-pin').value.trim();
     var err = $('join-err');
     err.textContent = '';
-    if (!team || !name){ err.textContent = 'Enter your team number and name.'; shakeCard(); return; }
+    if (!team){ err.textContent = 'Pick your team from the list.'; shakeCard(); return; }
+    if (!name){ err.textContent = 'Enter your name.'; shakeCard(); return; }
     if (pin.length !== 4){ err.textContent = 'Enter the 4-digit PIN from your host.'; shakeCard(); return; }
     socket.emit('player:join', { team: team, name: name, pin: pin, token: getToken() }, function(res){
       if (!res || !res.ok){
@@ -1078,7 +1107,8 @@
         err.textContent = reason === 'bad_pin' ? 'Incorrect PIN — ask the host for tonight’s PIN.' :
                            reason === 'already_started' ? 'This game has already started — ask the host to add you before the next game.' :
                            reason === 'no_game' ? 'No game is running yet — ask the host to generate a PIN first.' :
-                           'Enter your team number and name.';
+                           reason === 'bad_team' ? 'Pick your team from the list.' :
+                           'Pick your team and enter your name.';
         shakeCard();
         return;
       }
@@ -1227,7 +1257,7 @@
         ? '<button class="act kill" data-out="' + p.id + '" title="Remove this team from the game">&times;</button>'
         : '<button class="act back" data-in="' + p.id + '" title="Put this team back in play">&#8635;</button>';
       return '<span class="team-chip' + (p.active ? '' : ' out') + '">' +
-               '<span class="who">Team ' + esc(p.team) + ' &middot; ' + esc(p.name) + '</span>' + act +
+               '<span class="who">' + esc(p.team) + ' &middot; ' + esc(p.name) + '</span>' + act +
              '</span>';
     }).join('');
     $('team-chips').querySelectorAll('[data-out]').forEach(function(b){
@@ -1397,7 +1427,7 @@
     // kept simple here since the round auto-reveals once everyone's in or time is up.
     var grid = $('progress-grid');
     grid.innerHTML = latestPlayers.filter(function(p){ return p.active; }).map(function(p){
-      return '<span class="team-chip"><span class="who">Team ' + esc(p.team) + ' &middot; ' + esc(p.name) + '</span>' +
+      return '<span class="team-chip"><span class="who">' + esc(p.team) + ' &middot; ' + esc(p.name) + '</span>' +
              '<button class="act kill" data-out="' + p.id + '" title="Remove this team from the game">&times;</button></span>';
     }).join('');
     grid.querySelectorAll('[data-out]').forEach(function(b){
@@ -1466,7 +1496,7 @@
       el.className = 'winner-banner';
       var left = (lastResults && typeof lastResults.remainingActive === 'number') ? lastResults.remainingActive : null;
       el.innerHTML = '<div class="tag">Round Winner</div>' +
-        '<div class="who">&#127942; Team ' + esc(winner.team) + ' — ' + esc(winner.name) + '</div>' +
+        '<div class="who">&#127942; ' + esc(winner.team) + ' — ' + esc(winner.name) + '</div>' +
         '<div class="time">Correct in ' + fmtTime(winner.timeMs) + ' &middot; steps aside' +
         (left !== null ? ' &mdash; ' + left + (left === 1 ? ' team left' : ' teams left') : '') + '</div>';
     } else {
@@ -1515,7 +1545,7 @@
   function renderResultsTable(results){
     $('results-tbody').innerHTML = results.map(function(r){
       return '<tr class="' + (r.rank === 1 ? 'winner-row' : '') + '">' +
-        '<td>Team ' + esc(r.team) + '</td>' +
+        '<td class="name-cell">' + esc(r.team) + '</td>' +
         '<td class="name-cell">' + esc(r.name) + '</td>' +
         '<td class="tabular">' + (r.seq || '—') + '</td>' +
         '<td class="' + (r.correct ? 'correct-yes' : 'correct-no') + '">' + (r.correct ? 'Yes' : (r.seq ? 'No' : 'No answer')) + '</td>' +
@@ -1547,7 +1577,7 @@
       return '<div class="honour-row">' +
         '<div class="honour-medal">' + (medals[i] || '\u{1F396}️') + '</div>' +
         '<div class="honour-info"><div class="honour-round">Round ' + h.round + ' · ' + esc(CAT_LABEL[h.cat]) + '</div>' +
-        '<div class="honour-name">Team ' + esc(h.team) + ' — ' + esc(h.name) + '</div></div>' +
+        '<div class="honour-name">' + esc(h.team) + ' — ' + esc(h.name) + '</div></div>' +
         '<div class="honour-time">' + fmtTime(h.timeMs) + '</div></div>';
     }).join('') || '<p style="text-align:center;color:var(--text-2);">—</p>';
 
@@ -1555,7 +1585,7 @@
     if (payload.stillStanding && payload.stillStanding.length){
       block.innerHTML = '<p class="standing-title">Still Standing</p><div class="standing-row">' +
         payload.stillStanding.map(function(p){
-          return '<span class="cat-chip" style="background:var(--panel-strong);color:var(--text-0);border:1px solid var(--border);">Team ' + esc(p.team) + ' · ' + esc(p.name) + '</span>';
+          return '<span class="cat-chip" style="background:var(--panel-strong);color:var(--text-0);border:1px solid var(--border);">' + esc(p.team) + ' · ' + esc(p.name) + '</span>';
         }).join('') + '</div>';
     } else block.innerHTML = '';
 
