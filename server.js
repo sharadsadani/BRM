@@ -14,10 +14,15 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 const ROUND_MS = 20000;   // seconds allowed per question
 
+/* The ten team names, in the order they appear in the player's dropdown. The
+   page carries the same list; the server is what actually enforces it. */
+const TEAMS = ['Mercury','Venus','Earth','Mars','Jupiter','Saturn','Uranus','Neptune','Pluto','Apollo'];
+const teamRank = (t) => { const i = TEAMS.indexOf(t); return i < 0 ? 999 : i; };
+
 /* Bumped whenever server.js and index.html must be deployed together. The page
    compares this against its own copy and warns on screen if only one was
    updated — otherwise a half-updated deploy fails silently and confusingly. */
-const APP_VERSION = 'elim-1';
+const APP_VERSION = 'teams-1';
 
 /* ---------------- question bank (Logical Sequence set) ----------------
    Options are A-D; `ans` is the correct order as a string of those letters. */
@@ -68,7 +73,10 @@ function freshGame(){
 }
 
 function publicPlayers(){
-  return game.players.map(p => ({ id: p.id, team: p.team, name: p.name, active: p.active }));
+  return game.players
+    .slice()
+    .sort((a, b) => teamRank(a.team) - teamRank(b.team))
+    .map(p => ({ id: p.id, team: p.team, name: p.name, active: p.active }));
 }
 
 function lobbySnapshot(){
@@ -221,6 +229,7 @@ function endRound(){
 
 io.on('connection', (socket) => {
   socket.emit('server:version', APP_VERSION);
+  socket.emit('server:teams', TEAMS);
   socket.emit('game:snapshot', snapshotForNewConnection());
 
   socket.on('host:generatePin', () => {
@@ -265,11 +274,12 @@ io.on('connection', (socket) => {
   socket.on('player:join', ({ team, name, pin, token } = {}, ack) => {
     if (!game){ if (typeof ack === 'function') ack({ ok: false, reason: 'no_game' }); return; }
     if (game.started){ if (typeof ack === 'function') ack({ ok: false, reason: 'already_started' }); return; }
-    team = String(team || '').trim().slice(0, 20);
+    team = String(team || '').trim();
     name = String(name || '').trim().slice(0, 30);
     pin = String(pin || '').trim();
     token = String(token || '').trim().slice(0, 64) || genId();
     if (!team || !name){ if (typeof ack === 'function') ack({ ok: false, reason: 'missing_fields' }); return; }
+    if (TEAMS.indexOf(team) < 0){ if (typeof ack === 'function') ack({ ok: false, reason: 'bad_team' }); return; }
     if (pin !== game.pin){ if (typeof ack === 'function') ack({ ok: false, reason: 'bad_pin' }); return; }
     socket.data.role = 'player';
     socket.data.token = token;
