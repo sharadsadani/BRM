@@ -166,6 +166,28 @@
   .role-card h3{ font-size:clamp(1.2rem,1.7vw,1.45rem); color:#ffffff; margin-bottom:6px; }
   .role-card p{ color:#ded7f5; font-size:clamp(.9rem,1.15vw,1rem); margin:0; line-height:1.35; font-weight:600; }
   .home-hero{ padding-top:26px; }
+
+  /* the game's address, spelled out across the width of the opening screen —
+     one line always, shrunk by JS to whatever room the screen has */
+  /* full-bleed: the band ignores the page's side padding so the address can be
+     as large as the screen physically allows */
+  .home-link{ width:100vw; margin:26px 0 0 calc(50% - 50vw); padding:0 14px; text-align:center; }
+  .home-link-cap{
+    margin:0 0 8px; color:var(--text-2); font-weight:800; font-size:clamp(.7rem,1.1vw,.92rem);
+    letter-spacing:.14em; text-transform:uppercase;
+  }
+  .home-link-url{
+    white-space:nowrap; overflow:hidden; text-align:center;
+    font-family:'Baloo 2','Manrope',system-ui,sans-serif; font-weight:800; line-height:1.15;
+    color:#ffffff; font-size:64px; letter-spacing:.004em;
+    text-shadow:0 3px 18px rgba(0,0,0,.55), 0 0 28px rgba(52,211,153,.35);
+    border-bottom:3px solid var(--teal); padding-bottom:6px;
+  }
+  @media (max-width:700px){
+    .home-link{ margin-top:16px; }
+    .home-link-cap{ margin-bottom:5px; letter-spacing:.1em; }
+    .home-link-url{ border-bottom-width:2px; padding-bottom:4px; }
+  }
   .cat-row{ display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin:30px 0 6px; }
   .cat-chip{ padding:8px 18px; border-radius:999px; font-weight:800; font-size:.85rem; color:#170c30; }
 
@@ -548,6 +570,10 @@
           <p>Enter your team, name and today's PIN to join on your own phone.</p>
         </div>
       </div>
+      <div class="home-link">
+        <p class="home-link-cap">Host and players both start here</p>
+        <div class="home-link-url" id="home-link-url"></div>
+      </div>
     </div>
   </section>
 
@@ -929,6 +955,15 @@
       el.style.fontSize = Math.max(minPx, Math.floor(maxPx * (avail / needed) * 0.97)) + 'px';
     }
   }
+  /* the opening screen shows the address this page was served from, so it is
+     always the right one — no hard-coded link to fall out of date */
+  function fitHomeLink(){
+    var el = document.getElementById('home-link-url');
+    if (!el) return;
+    el.textContent = (location.origin + location.pathname).replace(/\/+$/, '');
+    fitOneLine(el, window.innerWidth < 560 ? 34 : 72, 9);
+  }
+
   function fitLink(){
     var el = document.getElementById('game-link');
     if (!el || !el.value) return;
@@ -956,14 +991,15 @@
   }
   fitHeaderLines();
   fitCredits();
+  fitHomeLink();
   var fitTimer = null;
   window.addEventListener('resize', function(){
     clearTimeout(fitTimer);
-    fitTimer = setTimeout(function(){ fitHeaderLines(); fitCredits(); fitLink(); }, 120);
+    fitTimer = setTimeout(function(){ fitHeaderLines(); fitCredits(); fitLink(); fitHomeLink(); }, 120);
   });
-  window.addEventListener('orientationchange', function(){ setTimeout(function(){ fitHeaderLines(); fitCredits(); fitLink(); }, 200); });
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function(){ fitHeaderLines(); fitCredits(); fitLink(); fitToScreen(); });
-  setTimeout(function(){ fitHeaderLines(); fitCredits(); fitLink(); fitToScreen(); }, 600);
+  window.addEventListener('orientationchange', function(){ setTimeout(function(){ fitHeaderLines(); fitCredits(); fitLink(); fitHomeLink(); }, 200); });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function(){ fitHeaderLines(); fitCredits(); fitLink(); fitHomeLink(); fitToScreen(); });
+  setTimeout(function(){ fitHeaderLines(); fitCredits(); fitLink(); fitHomeLink(); fitToScreen(); }, 600);
 
   /* If only one of server.js / index.html was uploaded, the game breaks in ways
      that are hard to spot (the board never opens, buttons do nothing). Say so
