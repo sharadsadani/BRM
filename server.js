@@ -22,7 +22,7 @@ const teamRank = (t) => { const i = TEAMS.indexOf(t); return i < 0 ? 999 : i; };
 /* Bumped whenever server.js and index.html must be deployed together. The page
    compares this against its own copy and warns on screen if only one was
    updated — otherwise a half-updated deploy fails silently and confusingly. */
-const APP_VERSION = 'teams-2';
+const APP_VERSION = 'teams-3';
 
 /* ---------------- question bank (Logical Sequence set) ----------------
    Options are A-D; `ans` is the correct order as a string of those letters. */
@@ -55,7 +55,7 @@ function freshGame(){
   return {
     id: 'g' + gameSeq + '_' + genId(),
     pin: genPin(),
-    players: [],           // {id: token, team, name, active, socketId}
+    players: [],           // {id: token, team, active, socketId} — the team IS the identity
     started: false,
     qIndex: -1,
     used: [],               // indexes of questions already played
@@ -63,7 +63,7 @@ function freshGame(){
     questionStart: 0,
     roundActive: false,
     roundTimer: null,
-    honour: [],              // {round, cat, team, name, timeMs}
+    honour: [],              // {round, cat, team, timeMs}
     lastQuestionPayload: null,
     lastResultsPayload: null,
     lastFinalPayload: null,
@@ -76,7 +76,7 @@ function publicPlayers(){
   return game.players
     .slice()
     .sort((a, b) => teamRank(a.team) - teamRank(b.team))
-    .map(p => ({ id: p.id, team: p.team, name: p.name, active: p.active }));
+    .map(p => ({ id: p.id, team: p.team, active: p.active }));
 }
 
 function lobbySnapshot(){
@@ -111,7 +111,7 @@ function endGame(){
   game.phase = 'final';
   const payload = {
     honour: game.honour,
-    stillStanding: game.players.filter(p => p.active).map(p => ({ team: p.team, name: p.name }))
+    stillStanding: game.players.filter(p => p.active).map(p => ({ team: p.team }))
   };
   game.lastFinalPayload = payload;
   io.emit('game:final', payload);
@@ -196,7 +196,7 @@ function endRound(){
     const seq = submitted ? a.order.join('') : null;
     const correct = submitted && seq === q.ans;
     const timeMs = submitted ? (a.submitTime - game.questionStart) : null;
-    return { playerId: p.id, team: p.team, name: p.name, seq, correct, timeMs };
+    return { playerId: p.id, team: p.team, seq, correct, timeMs };
   });
   results.sort((x, y) => {
     if (x.correct && y.correct) return x.timeMs - y.timeMs;
@@ -213,7 +213,7 @@ function endRound(){
   if (winner){
     const p = game.players.find(pl => pl.id === winner.playerId);
     if (p) p.active = false;
-    game.honour.push({ round: q.n, cat: q.cat, team: winner.team, name: winner.name, timeMs: winner.timeMs });
+    game.honour.push({ round: q.n, cat: q.cat, team: winner.team, timeMs: winner.timeMs });
   }
   game.phase = 'results';
   const payload = {
@@ -271,22 +271,25 @@ io.on('connection', (socket) => {
     else pushPlayers();
   });
 
-  socket.on('player:join', ({ team, name, pin, token } = {}, ack) => {
+  socket.on('player:join', ({ team, pin, token } = {}, ack) => {
     if (!game){ if (typeof ack === 'function') ack({ ok: false, reason: 'no_game' }); return; }
     if (game.started){ if (typeof ack === 'function') ack({ ok: false, reason: 'already_started' }); return; }
     team = String(team || '').trim();
-    name = String(name || '').trim().slice(0, 30);
     pin = String(pin || '').trim();
     token = String(token || '').trim().slice(0, 64) || genId();
-    if (!team || !name){ if (typeof ack === 'function') ack({ ok: false, reason: 'missing_fields' }); return; }
+    if (!team){ if (typeof ack === 'function') ack({ ok: false, reason: 'missing_fields' }); return; }
     if (TEAMS.indexOf(team) < 0){ if (typeof ack === 'function') ack({ ok: false, reason: 'bad_team' }); return; }
     if (pin !== game.pin){ if (typeof ack === 'function') ack({ ok: false, reason: 'bad_pin' }); return; }
     socket.data.role = 'player';
     socket.data.token = token;
-    // Re-joining with a token already in this game (e.g. a form double-submit) just updates the seat.
+    /* One seat per team, and the team is the identity — so a phone picking a team
+       that is already checked in takes that seat over (a reload, or a swapped
+       handset before kick-off) rather than creating a duplicate. Joins are refused
+       once the game has started, so this can only happen in the lobby. */
+    game.players = game.players.filter(p => p.id === token || p.team !== team);
     var existing = game.players.find(p => p.id === token);
-    if (existing){ existing.team = team; existing.name = name; existing.socketId = socket.id; }
-    else game.players.push({ id: token, team, name, active: true, socketId: socket.id });
+    if (existing){ existing.team = team; existing.socketId = socket.id; }
+    else game.players.push({ id: token, team, active: true, socketId: socket.id });
     if (typeof ack === 'function') ack({ ok: true, token, gameId: game.id });
     broadcastLobby();
   });
