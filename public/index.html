@@ -633,17 +633,13 @@
     <div class="lobby-grid" style="grid-template-columns:1fr; max-width:480px; margin:24px auto 0;">
       <div class="panel join-card">
         <h2>Player Check-In</h2>
-        <p class="hint">Pick your team, then your name, then today's PIN (ask your host).</p>
+        <p class="hint">Pick your team, then enter today's PIN (ask your host).</p>
         <div class="field-stack">
           <div class="field">
             <label for="in-team">Team</label>
             <select id="in-team">
               <option value="" selected disabled>Choose your team…</option>
             </select>
-          </div>
-          <div class="field">
-            <label for="in-name">Player Name</label>
-            <input type="text" id="in-name" placeholder="e.g. Aarav">
           </div>
         </div>
         <div class="field">
@@ -731,7 +727,7 @@
     <div class="correct-strip" id="correct-strip"></div>
     <div class="table-wrap" id="table-wrap">
       <table>
-        <thead><tr><th>Team</th><th>Player</th><th>Answer</th><th>Correct?</th><th>Time</th><th>Rank</th></tr></thead>
+        <thead><tr><th>Team</th><th>Answer</th><th>Correct?</th><th>Time</th><th>Rank</th></tr></thead>
         <tbody id="results-tbody"></tbody>
       </table>
     </div>
@@ -1004,7 +1000,7 @@
   /* If only one of server.js / index.html was uploaded, the game breaks in ways
      that are hard to spot (the board never opens, buttons do nothing). Say so
      loudly instead of failing silently. */
-  var CLIENT_VERSION = 'teams-2';
+  var CLIENT_VERSION = 'teams-3';
   /* The ten team names, in the order the host set. The server sends the list on
      connection; this copy is only a fallback if that arrives late. */
   var TEAMS = ['#1 - Mercury','#2 - Venus','#3 - Earth','#4 - Mars','#5 - Jupiter','#6 - Saturn','#7 - Uranus','#8 - Neptune','#9 - Pluto','#10 - Apollo'];
@@ -1114,10 +1110,9 @@
       return;
     }
     grid.innerHTML = players.map(function(p){
-      var rm = (role === 'host') ? '<button class="rm" data-rm="' + p.id + '" aria-label="Remove ' + esc(p.name) + '">&times;</button>' : '';
+      var rm = (role === 'host') ? '<button class="rm" data-rm="' + p.id + '" aria-label="Remove ' + esc(p.team) + '">&times;</button>' : '';
       return '<div class="roster-card">' + rm +
-        '<div class="team">' + esc(p.team) + '</div>' +
-        '<div class="name">' + esc(p.name) + '</div>' +
+        '<div class="name">' + esc(p.team) + '</div>' +
       '</div>';
     }).join('');
     grid.querySelectorAll('[data-rm]').forEach(function(btn){
@@ -1130,21 +1125,19 @@
   /* ---------------- PLAYER JOIN ---------------- */
   $('btn-join').addEventListener('click', function(){
     var team = $('in-team').value;
-    var name = $('in-name').value.trim();
     var pin = $('in-pin').value.trim();
     var err = $('join-err');
     err.textContent = '';
     if (!team){ err.textContent = 'Pick your team from the list.'; shakeCard(); return; }
-    if (!name){ err.textContent = 'Enter your name.'; shakeCard(); return; }
     if (pin.length !== 4){ err.textContent = 'Enter the 4-digit PIN from your host.'; shakeCard(); return; }
-    socket.emit('player:join', { team: team, name: name, pin: pin, token: getToken() }, function(res){
+    socket.emit('player:join', { team: team, pin: pin, token: getToken() }, function(res){
       if (!res || !res.ok){
         var reason = res && res.reason;
         err.textContent = reason === 'bad_pin' ? 'Incorrect PIN — ask the host for tonight’s PIN.' :
                            reason === 'already_started' ? 'This game has already started — ask the host to add you before the next game.' :
                            reason === 'no_game' ? 'No game is running yet — ask the host to generate a PIN first.' :
                            reason === 'bad_team' ? 'Pick your team from the list.' :
-                           'Pick your team and enter your name.';
+                           'Pick your team from the list.';
         shakeCard();
         return;
       }
@@ -1293,7 +1286,7 @@
         ? '<button class="act kill" data-out="' + p.id + '" title="Remove this team from the game">&times;</button>'
         : '<button class="act back" data-in="' + p.id + '" title="Put this team back in play">&#8635;</button>';
       return '<span class="team-chip' + (p.active ? '' : ' out') + '">' +
-               '<span class="who">' + esc(p.team) + ' &middot; ' + esc(p.name) + '</span>' + act +
+               '<span class="who">' + esc(p.team) + '</span>' + act +
              '</span>';
     }).join('');
     $('team-chips').querySelectorAll('[data-out]').forEach(function(b){
@@ -1463,7 +1456,7 @@
     // kept simple here since the round auto-reveals once everyone's in or time is up.
     var grid = $('progress-grid');
     grid.innerHTML = latestPlayers.filter(function(p){ return p.active; }).map(function(p){
-      return '<span class="team-chip"><span class="who">' + esc(p.team) + ' &middot; ' + esc(p.name) + '</span>' +
+      return '<span class="team-chip"><span class="who">' + esc(p.team) + '</span>' +
              '<button class="act kill" data-out="' + p.id + '" title="Remove this team from the game">&times;</button></span>';
     }).join('');
     grid.querySelectorAll('[data-out]').forEach(function(b){
@@ -1532,7 +1525,7 @@
       el.className = 'winner-banner';
       var left = (lastResults && typeof lastResults.remainingActive === 'number') ? lastResults.remainingActive : null;
       el.innerHTML = '<div class="tag">Round Winner</div>' +
-        '<div class="who">&#127942; ' + esc(winner.team) + ' — ' + esc(winner.name) + '</div>' +
+        '<div class="who">&#127942; ' + esc(winner.team) + '</div>' +
         '<div class="time">Correct in ' + fmtTime(winner.timeMs) + ' &middot; steps aside' +
         (left !== null ? ' &mdash; ' + left + (left === 1 ? ' team left' : ' teams left') : '') + '</div>';
     } else {
@@ -1582,7 +1575,6 @@
     $('results-tbody').innerHTML = results.map(function(r){
       return '<tr class="' + (r.rank === 1 ? 'winner-row' : '') + '">' +
         '<td class="name-cell">' + esc(r.team) + '</td>' +
-        '<td class="name-cell">' + esc(r.name) + '</td>' +
         '<td class="tabular">' + (r.seq || '—') + '</td>' +
         '<td class="' + (r.correct ? 'correct-yes' : 'correct-no') + '">' + (r.correct ? 'Yes' : (r.seq ? 'No' : 'No answer')) + '</td>' +
         '<td class="tabular">' + (r.timeMs != null ? fmtTime(r.timeMs) : '—') + '</td>' +
@@ -1613,7 +1605,7 @@
       return '<div class="honour-row">' +
         '<div class="honour-medal">' + (medals[i] || '\u{1F396}️') + '</div>' +
         '<div class="honour-info"><div class="honour-round">Round ' + h.round + ' · ' + esc(CAT_LABEL[h.cat]) + '</div>' +
-        '<div class="honour-name">' + esc(h.team) + ' — ' + esc(h.name) + '</div></div>' +
+        '<div class="honour-name">' + esc(h.team) + '</div></div>' +
         '<div class="honour-time">' + fmtTime(h.timeMs) + '</div></div>';
     }).join('') || '<p style="text-align:center;color:var(--text-2);">—</p>';
 
@@ -1621,7 +1613,7 @@
     if (payload.stillStanding && payload.stillStanding.length){
       block.innerHTML = '<p class="standing-title">Still Standing</p><div class="standing-row">' +
         payload.stillStanding.map(function(p){
-          return '<span class="cat-chip" style="background:var(--panel-strong);color:var(--text-0);border:1px solid var(--border);">' + esc(p.team) + ' · ' + esc(p.name) + '</span>';
+          return '<span class="cat-chip" style="background:var(--panel-strong);color:var(--text-0);border:1px solid var(--border);">' + esc(p.team) + '</span>';
         }).join('') + '</div>';
     } else block.innerHTML = '';
 
