@@ -1004,10 +1004,10 @@
   /* If only one of server.js / index.html was uploaded, the game breaks in ways
      that are hard to spot (the board never opens, buttons do nothing). Say so
      loudly instead of failing silently. */
-  var CLIENT_VERSION = 'teams-1';
+  var CLIENT_VERSION = 'teams-2';
   /* The ten team names, in the order the host set. The server sends the list on
      connection; this copy is only a fallback if that arrives late. */
-  var TEAMS = ['Mercury','Venus','Earth','Mars','Jupiter','Saturn','Uranus','Neptune','Pluto','Apollo'];
+  var TEAMS = ['#1 - Mercury','#2 - Venus','#3 - Earth','#4 - Mars','#5 - Jupiter','#6 - Saturn','#7 - Uranus','#8 - Neptune','#9 - Pluto','#10 - Apollo'];
   function fillTeams(list){
     if (list && list.length) TEAMS = list;
     var sel = $('in-team');
