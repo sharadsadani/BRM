@@ -16,13 +16,13 @@ const ROUND_MS = 20000;   // seconds allowed per question
 
 /* The ten team names, in the order they appear in the player's dropdown. The
    page carries the same list; the server is what actually enforces it. */
-const TEAMS = ['Mercury','Venus','Earth','Mars','Jupiter','Saturn','Uranus','Neptune','Pluto','Apollo'];
+const TEAMS = ['#1 - Mercury','#2 - Venus','#3 - Earth','#4 - Mars','#5 - Jupiter','#6 - Saturn','#7 - Uranus','#8 - Neptune','#9 - Pluto','#10 - Apollo'];
 const teamRank = (t) => { const i = TEAMS.indexOf(t); return i < 0 ? 999 : i; };
 
 /* Bumped whenever server.js and index.html must be deployed together. The page
    compares this against its own copy and warns on screen if only one was
    updated — otherwise a half-updated deploy fails silently and confusingly. */
-const APP_VERSION = 'teams-1';
+const APP_VERSION = 'teams-2';
 
 /* ---------------- question bank (Logical Sequence set) ----------------
    Options are A-D; `ans` is the correct order as a string of those letters. */
